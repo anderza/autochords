@@ -158,6 +158,10 @@ button{font-variant-numeric:tabular-nums;text-align:center;display:inline-flex;a
 .builder-panel{padding:14px 6px;display:grid;grid-template-columns:1fr 1.3fr;gap:9px}.builder-panel p{grid-column:1/-1}.builder-panel select{font-size:13px}
 #editModes{gap:2px}#editModes button{font-size:11px;padding:11px 3px}.dialog{max-height:calc(100dvh - 22px)}
 @media(max-width:380px){.tab-staff{padding:7px 3px}.tab-fret-cell{height:27px}.tab-head-btn{font-size:12px}.dialog{padding:12px}}
+
+/* v0.4: clearly identify uncertain harmony instead of inventing precision */
+.chord-btn.uncertain{background:linear-gradient(155deg,#25283a,#121522);border-style:dashed;color:#9da5bb}
+.chord-btn.uncertain .chord-label{opacity:.7}
 </style></head>
 <body><div class="app" id="app">
 <header class="topbar"><div class="brand" id="brand"><svg viewBox="0 0 44 44" aria-hidden="true" fill="none" stroke-linecap="round" stroke-width="3.6"><path d="M3 20v4" stroke="#4cc9ff"/><path d="M9 14v16" stroke="#75adff"/><path d="M15 6v32" stroke="#a96bff"/><path d="M21 16v12" stroke="#d68bff"/><path d="M27 10v24" stroke="#8e66ff"/><path d="M33 17v10" stroke="#5ac4ff"/><path d="M40 20v4" stroke="#6d9cff"/></svg><span>Auto <strong>Chords</strong></span></div><div class="topactions"><button class="pro" id="proBtn" title="О версии приложения">✦ Studio</button><button class="tiny-action" id="settingsBtn" aria-label="Настройки инструмента">⚙</button></div></header>
@@ -215,13 +219,18 @@ function renderLists(){
  if(!favorites.length)fav.innerHTML='<div class="placeholder">В избранном пока нет песен. Нажми ♡ в редакторе трека.</div>';
  else favorites.forEach(name=>fav.append(recentButton(name,'Избранная композиция','★',()=>$('audioInput').click())));
 }
-function newTrack(name,artist){if(audioUrl){URL.revokeObjectURL(audioUrl);audioUrl=''}audio.removeAttribute('src');audio.load();fileBuffer=null;decoded=null;waveData=null;track={name,artist,events:[],lyrics:'',tabs:'',duration:0,fileKey:null};let note=saved.notes?.[name];if(note){track.lyrics=note.lyrics||'';track.tabs=note.tabs||''}playingIndex=-1;lastScrollIndex=-1;chordPage=0;tabPage=0;$('trackTitle').textContent=name;$('trackArtist').textContent=artist;$('playerTitle').textContent=name;$('lyricsText').value=track.lyrics;$('tabsText').value=track.tabs;$('analysisProgress').textContent='';$('analysisLabel').textContent='Нет разметки';$('timeTotal').textContent='0:00';$('timeTop').textContent='0:00';$('playerTime').textContent='0:00 / 0:00';$('playBtn').textContent='▶';updateFav();renderChords();drawWave();switchTab('chords')}
+function newTrack(name,artist){if(audioUrl){URL.revokeObjectURL(audioUrl);audioUrl=''}audio.removeAttribute('src');audio.load();fileBuffer=null;decoded=null;waveData=null;track={name,artist,events:[],lyrics:'',tabs:'',duration:0,fileKey:null};let note=saved.notes?.[name];if(note){track.lyrics=note.lyrics||'';track.tabs=note.tabs||''}playingIndex=-1;lastScrollIndex=-1;chordPage=0;tabPage=0;$('trackTitle').textContent=name;$('trackArtist').textContent=artist;$('playerTitle').textContent=name;$('lyricsText').value=track.lyrics;$('tabsText').value=track.tabs;$('analysisProgress').textContent='';$('analysisLabel').textContent='Нет разметки · открой аудиофайл';$('timeTotal').textContent='0:00';$('timeTop').textContent='0:00';$('playerTime').textContent='0:00 / 0:00';$('playBtn').textContent='▶';updateFav();renderChords();drawWave();switchTab('chords')}
 function attachAudioFile(file){
  if(!file)return;newTrack(file.name.replace(/\.[^.]+$/,''),'Локальный файл');fileBuffer=file;
  audioUrl=URL.createObjectURL(file);audio.src=audioUrl;audio.load();track.fileKey=file.name+'|'+file.size;
  const edits=saved.edits?.[track.fileKey];
- if(Array.isArray(edits)&&edits.length){track.events=edits.map(e=>({...e})).sort((a,b)=>a.time-b.time);$('analysisLabel').textContent='Сохранённая разметка · можно редактировать'}
- else $('analysisLabel').textContent='Экспериментальный анализ — результат необходимо проверить';
+ // Old automatic estimates were accidentally stored as user edits. Never reuse them as ground truth.
+ if(edits?.method==='manual-v4'&&Array.isArray(edits.events)&&edits.events.length){
+   track.events=edits.events.map(e=>({...e})).sort((a,b)=>a.time-b.time);
+   $('analysisLabel').textContent='Сохранённые ручные исправления · анализ можно перезапустить';
+ }else if(Array.isArray(edits)&&edits.length){
+   $('analysisLabel').textContent='Старая автоматическая разметка устарела — повторный анализ…';
+ }else $('analysisLabel').textContent='Новый анализ гармоний · результат необходимо проверить';
  history=[{name:track.name},...history.filter(h=>h.name!==track.name)].slice(0,15);persist();
  navigate('track');toast('Файл открыт. Аккорды будут предварительно определены или можно добавить их вручную.');decodeWave(file);
 }
@@ -234,7 +243,7 @@ $('prevChord').onclick=()=>{let i=currentEventIndex(audio.currentTime||0);seekEv
 $('loopBtn').onclick=()=>{$('loopToggle').checked=!$('loopToggle').checked;applyLoop()};function applyLoop(){audio.loop=$('loopToggle').checked;settings.loop=audio.loop;$('loopBtn').classList.toggle('loop-on',audio.loop)}function switchTab(s){activeTab=s;$$('#trackTabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===s));$$('.track-pane').forEach(p=>p.classList.toggle('active',p.id==='pane-'+s));if(s==='chords')highlightForTime(audio.currentTime||0);if(s==='tabs')renderTabScore(Math.floor(Math.max(0,currentEventIndex(audio.currentTime||0))/CHORDS_PER_PAGE))}$$('#trackTabs button').forEach(b=>b.onclick=()=>switchTab(b.dataset.tab));$('lyricsText').oninput=e=>saveNote('lyrics',e.target.value);$('tabsText').oninput=e=>saveNote('tabs',e.target.value);function saveNote(k,v){track[k]=v;saved.notes ||= {};saved.notes[track.name] ||= {};saved.notes[track.name][k]=v;persist()}$('favoriteBtn').onclick=()=>{if(!track.name)return;favorites=favorites.includes(track.name)?favorites.filter(n=>n!==track.name):[track.name,...favorites];persist();updateFav()};function updateFav(){$('favoriteBtn').textContent=favorites.includes(track.name)?'♥':'♡';$('favoriteBtn').style.color=favorites.includes(track.name)?'#e89aff':''}
 const CHORDS_PER_PAGE=16;
 function setChordCounter(){const name=$('nowChord');if(!name)return;const ev=track.events[playingIndex];name.textContent=ev?('Сейчас: '+transposeChord(ev.chord,settings.transpose)+' · '+fmt(ev.time)):'Аккорды не определены';}
-function paintChordPage(page){const list=$('chordList');const n=track.events.length;list.replaceChildren();if(!n){list.innerHTML='<div class="placeholder">Пока нет аккордов. Открой MP3 и запусти анализ или добавь аккорд вручную.</div>';return}const pages=Math.ceil(n/CHORDS_PER_PAGE);chordPage=Math.max(0,Math.min(page,pages-1));const first=chordPage*CHORDS_PER_PAGE;const toolbar=document.createElement('div');toolbar.className='chord-pagebar';const prev=document.createElement('button');prev.textContent='❮';prev.type='button';prev.title='Предыдущие 16 аккордов';prev.disabled=chordPage===0;prev.onclick=()=>paintChordPage(chordPage-1);const label=document.createElement('div');label.className='pager-label';label.innerHTML='<span>Сетка 4×4 · '+(chordPage+1)+' / '+pages+'</span><small>'+(first+1)+'–'+Math.min(first+16,n)+' из '+n+' · автоматический переход</small><span id="nowChord"></span>';const next=document.createElement('button');next.textContent='❯';next.type='button';next.title='Следующие 16 аккордов';next.disabled=chordPage===pages-1;next.onclick=()=>paintChordPage(chordPage+1);toolbar.append(prev,label,next);const grid=document.createElement('div');grid.className='chord-grid';grid.setAttribute('role','group');grid.setAttribute('aria-label','16 аккордов, 4 столбца и 4 строки');for(let k=0;k<CHORDS_PER_PAGE;k++){let i=first+k,ev=track.events[i],cell=document.createElement('div'),btn=document.createElement('button');cell.className='chord-block';btn.type='button';btn.className='chord-btn'+(playingIndex===i&&ev?' playing':'');if(ev){btn.dataset.event=i;btn.id='event-'+i;btn.innerHTML='<span class="chord-label">'+esc(transposeChord(ev.chord,settings.transpose))+'</span><span class="editcue">✎</span><small class="chord-stamp">'+fmt(ev.time)+'</small>';btn.setAttribute('aria-label',ev.chord+', '+fmt(ev.time)+', перемотать и изменить');if(playingIndex===i)btn.setAttribute('aria-current','true');btn.onclick=()=>{seekEvent(i);openChordEditor(i)}}else{btn.disabled=true;btn.textContent='—';btn.setAttribute('aria-label','Пустая ячейка')}cell.append(btn);grid.append(cell)}list.append(toolbar,grid);setChordCounter()}
+function paintChordPage(page){const list=$('chordList');const n=track.events.length;list.replaceChildren();if(!n){list.innerHTML='<div class="placeholder">Пока нет аккордов. Открой MP3 и запусти анализ или добавь аккорд вручную.</div>';return}const pages=Math.ceil(n/CHORDS_PER_PAGE);chordPage=Math.max(0,Math.min(page,pages-1));const first=chordPage*CHORDS_PER_PAGE;const toolbar=document.createElement('div');toolbar.className='chord-pagebar';const prev=document.createElement('button');prev.textContent='❮';prev.type='button';prev.title='Предыдущие 16 аккордов';prev.disabled=chordPage===0;prev.onclick=()=>paintChordPage(chordPage-1);const label=document.createElement('div');label.className='pager-label';label.innerHTML='<span>Сетка 4×4 · '+(chordPage+1)+' / '+pages+'</span><small>'+(first+1)+'–'+Math.min(first+16,n)+' из '+n+' · автоматический переход</small><span id="nowChord"></span>';const next=document.createElement('button');next.textContent='❯';next.type='button';next.title='Следующие 16 аккордов';next.disabled=chordPage===pages-1;next.onclick=()=>paintChordPage(chordPage+1);toolbar.append(prev,label,next);const grid=document.createElement('div');grid.className='chord-grid';grid.setAttribute('role','group');grid.setAttribute('aria-label','16 аккордов, 4 столбца и 4 строки');for(let k=0;k<CHORDS_PER_PAGE;k++){let i=first+k,ev=track.events[i],cell=document.createElement('div'),btn=document.createElement('button');cell.className='chord-block';btn.type='button';btn.className='chord-btn'+(playingIndex===i&&ev?' playing':'')+(ev&&(ev.chord==='?'||ev.chord==='—')?' uncertain':'');if(ev){btn.dataset.event=i;btn.id='event-'+i;btn.innerHTML='<span class="chord-label">'+esc(transposeChord(ev.chord,settings.transpose))+'</span><span class="editcue">✎</span><small class="chord-stamp">'+fmt(ev.time)+'</small>';btn.setAttribute('aria-label',ev.chord+', '+fmt(ev.time)+', перемотать и изменить');if(ev.source===ANALYZER_REV)btn.title='Автоматическая оценка · точность не гарантирована';if(playingIndex===i)btn.setAttribute('aria-current','true');btn.onclick=()=>{seekEvent(i);openChordEditor(i)}}else{btn.disabled=true;btn.textContent='—';btn.setAttribute('aria-label','Пустая ячейка')}cell.append(btn);grid.append(cell)}list.append(toolbar,grid);setChordCounter()}
 function updateTabHighlight(){
  $$('#tabScore [data-tab-event]').forEach(node=>{const active=Number(node.dataset.tabEvent)===playingIndex;node.classList.toggle('active',active);if(active)node.setAttribute('aria-current','true');else node.removeAttribute('aria-current')});
 }
@@ -254,8 +263,8 @@ function renderTabScore(page=tabPage){
 $('tabPrev').onclick=()=>renderTabScore(tabPage-1);$('tabNext').onclick=()=>renderTabScore(tabPage+1);
 $('tabEditCurrent').onclick=()=>{if(!track.events.length){toast('Сначала добавь аккорд в трек');return}const i=playingIndex>=0?playingIndex:tabPage*16;openChordEditor(Math.min(i,track.events.length-1))};
 function renderChords(){const i=currentEventIndex(audio.currentTime||0);playingIndex=i;paintChordPage(Math.floor(Math.max(0,i)/CHORDS_PER_PAGE));if(activeTab==='tabs')renderTabScore(Math.floor(Math.max(0,i)/CHORDS_PER_PAGE))}
-function saveChordCorrections(){if(track.fileKey){saved.edits ||= {};saved.edits[track.fileKey]=track.events.map(e=>({time:e.time,chord:e.chord,frets:e.frets}));persist()}}
-$('exportBtn').onclick=()=>{if(!track.events.length){toast('Нет аккордов для экспорта');return}const blob=new Blob([JSON.stringify({track:track.name,method:'manual chord edits or experimental browser spectral estimation; tablature based on voicings, not transcription',events:track.events,lyrics:track.lyrics,tabs:track.tabs},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(track.name||'track').replace(/[^\wа-яё -]+/gi,'_')+'_chords.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};$('addChordBtn').onclick=()=>{let t=audio.currentTime||0;track.events.push({time:t,chord:'C'});track.events.sort((a,b)=>a.time-b.time);saveChordCorrections();renderChords();openChordEditor(track.events.findIndex(e=>e.time===t&&e.chord==='C'))};$('trackSettings').onclick=()=>navigate('settings');$('goSettings').onclick=()=>navigate('settings');
+function saveChordCorrections(){if(track.fileKey){saved.edits ||= {};saved.edits[track.fileKey]={method:'manual-v4',events:track.events.map(e=>({time:e.time,chord:e.chord,frets:e.frets,confidence:e.confidence}))};persist()}}
+$('exportBtn').onclick=()=>{if(!track.events.length){toast('Нет аккордов для экспорта');return}const blob=new Blob([JSON.stringify({track:track.name,method:'manual chord edits or experimental browser spectral estimation; tablature based on voicings, not transcription',events:track.events,lyrics:track.lyrics,tabs:track.tabs},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(track.name||'track').replace(/[^\wа-яё -]+/gi,'_')+'_chords.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};$('addChordBtn').onclick=()=>{let t=audio.currentTime||0;track.events.push({time:t,chord:'C',confidence:1,source:'manual'});track.events.sort((a,b)=>a.time-b.time);saveChordCorrections();renderChords();openChordEditor(track.events.findIndex(e=>e.time===t&&e.chord==='C'))};$('trackSettings').onclick=()=>navigate('settings');$('goSettings').onclick=()=>navigate('settings');
 // Guitar string order in stored positions: low E, A, D, G, B, high e.
 const OPEN_MIDI=[40,45,50,55,59,64],GUITAR_STRINGS=['E','A','D','G','B','e'];
 const CHORD_SHAPES={
@@ -285,7 +294,7 @@ $('editModal').addEventListener('click',e=>{if(e.target===$('editModal'))$('edit
 $('presetShape').onclick=()=>{const shape=chordShape($('editChordName').value);if(!shape){toast('Для этого названия нет готовой формы. Расставь лады вручную.');return}fingerPositions=shape;const pos=shape.filter(n=>n>0);editBaseFret=pos.length&&Math.max(...pos)>5?Math.max(1,Math.min(12,Math.min(...pos)-1)):1;renderEditInstrument();};
 $('saveChord').onclick=()=>{const e=track.events[editIndex];if(!e)return;const v=$('editChordName').value.trim();if(!/^[A-Ga-g][#b♭♯]?[a-zA-Z0-9#b♯♭()+/°-]{0,18}$/.test(v)){toast('Введи название аккорда, например Gm7 или Bb');return}
  const raw=Number($('editChordTime').value);if(!Number.isFinite(raw)||raw<0){toast('Проверь время аккорда');return}
- e.chord=v;e.time=raw;e.frets=[...fingerPositions];track.events.sort((a,b)=>a.time-b.time);
+ e.chord=v;e.time=raw;e.frets=[...fingerPositions];e.confidence=1;e.source='manual';track.events.sort((a,b)=>a.time-b.time);
  saveChordCorrections();playingIndex=-1;$('editModal').classList.remove('open');renderChords();highlightForTime(audio.currentTime||0);if(activeTab==='tabs')renderTabScore(Math.floor(Math.max(0,currentEventIndex(audio.currentTime||0))/16));
 };
 $('deleteChord').onclick=()=>{if(editIndex<0)return;track.events.splice(editIndex,1);saveChordCorrections();playingIndex=-1;$('editModal').classList.remove('open');renderChords()};
@@ -321,13 +330,163 @@ function drawWave(){const canvas=$('wave'),ctx=canvas.getContext('2d');if(!ctx)r
 async function decodeWave(file){try{const ctx=audioContext||(audioContext=new(window.AudioContext||window.webkitAudioContext)());const data=await file.arrayBuffer();if(!fileBuffer||fileBuffer!==file)return;decoded=await ctx.decodeAudioData(data.slice(0));const ch=decoded.getChannelData(0),bins=330,stride=Math.max(1,Math.floor(ch.length/(bins*32)));waveData=new Float32Array(bins);let max=0;for(let i=0;i<bins;i++){let from=Math.floor(i/bins*ch.length),end=Math.min(ch.length,Math.floor((i+1)/bins*ch.length)),sum=0,count=0;for(let j=from;j<end;j+=stride){sum+=ch[j]*ch[j];count++}let v=Math.sqrt(sum/Math.max(1,count));waveData[i]=v;max=Math.max(max,v)}for(let i=0;i<bins;i++)waveData[i]=Math.min(1,.12+.86*Math.sqrt(waveData[i]/Math.max(.001,max)));drawWave();if(fileBuffer===file&&!track.events.length){$('analysisLabel').textContent='Автоматический анализ в браузере…';analyzeTrack()}}catch(err){console.warn('Decode for waveform:',err);$('analysisProgress').textContent='Формат воспроизводится, но для анализа не декодирован: '+err.message}}
 // Browser-side offline chroma estimate from the real audio spectrum. Experimental, not a verified transcription.
 function fft(re,im){let n=re.length;for(let i=1,j=0;i<n;i++){let bit=n>>1;for(;j&bit;bit>>=1)j^=bit;j^=bit;if(i<j){let a=re[i];re[i]=re[j];re[j]=a}}for(let len=2;len<=n;len<<=1){let a=-2*Math.PI/len,wr=Math.cos(a),wi=Math.sin(a);for(let start=0;start<n;start+=len){let r=1,v=0;for(let k=0;k<len/2;k++){let u=start+k,z=u+len/2,tr=r*re[z]-v*im[z],ti=r*im[z]+v*re[z];re[z]=re[u]-tr;im[z]=im[u]-ti;re[u]+=tr;im[u]+=ti;let nr=r*wr-v*wi;v=r*wi+v*wr;r=nr}}}}
-function triadScore(chroma,root,minor){const pcs=[root,(root+(minor?3:4))%12,(root+7)%12];let chord=0,other=0;for(let k=0;k<12;k++){if(pcs.includes(k))chord+=chroma[k]*(k===root?1.15:1.0);else other+=chroma[k]}return chord/3-other/9*.28}
-function classifyChroma(chroma){let best=-Infinity,chosen='C';const qualities=[['',[0,4,7]],['m',[0,3,7]],['7',[0,4,7,10]],['m7b5',[0,3,6,10]]];for(let root=0;root<12;root++)for(const [suffix,intervals] of qualities){const pcs=intervals.map(i=>(i+root)%12);let hit=0,miss=0;for(let k=0;k<12;k++){if(pcs.includes(k))hit+=chroma[k];else miss+=chroma[k]}const score=hit/pcs.length - miss/(12-pcs.length)*.25 + chroma[root]*.08 - (suffix?0.012:0);if(score>best){best=score;chosen=NOTES[root]+suffix}}return chosen}
-async function analyzeTrack(){if(analysisInProgress)return;if(track.fileKey&&saved.edits?.[track.fileKey]?.length&&track.events.length&&!confirm('Анализ заново заменит сохранённые правки аккордов. Продолжить?'))return;if(!decoded){toast('Сначала открой поддерживаемый аудиофайл и дождись загрузки спектра');return}analysisInProgress=true;const b=$('analyzeBtn');b.disabled=true;let sr=decoded.sampleRate,data=decoded.getChannelData(0),n=8192,step=Math.max(1,Math.floor(sr*.28)),total=Math.max(1,Math.floor((data.length-n)/step)),re=new Float32Array(n),im=new Float32Array(n),mag=new Float32Array(n/2),frames=[],midis=[];for(let m=40;m<=83;m++){let harmonics=[];for(let j=1;j<=3;j++){let f=440*2**((m-69)/12)*j;if(f<sr/2)harmonics.push(Math.round(f*n/sr))}midis.push({pc:m%12,bins:harmonics})}try{for(let f=0;f<total;f++){const at=f*step;for(let i=0;i<n;i++){let v=data[at+i]||0;re[i]=v*(.5-.5*Math.cos(2*Math.PI*i/(n-1)));im[i]=0}fft(re,im);for(let i=0;i<mag.length;i++)mag[i]=Math.hypot(re[i],im[i]);const chroma=new Float32Array(12);for(let note of midis){let value=0;note.bins.forEach((bin,k)=>{let s=Math.max(mag[bin-1]||0,mag[bin]||0,mag[bin+1]||0);value+=Math.sqrt(s)/(k+1)**1.25});chroma[note.pc]+=value}let mx=0;for(let x of chroma)mx=Math.max(mx,x);if(mx>0)for(let i=0;i<12;i++)chroma[i]/=mx;frames.push(classifyChroma(chroma));if(f%32===0){$('analysisProgress').textContent='Анализ спектра: '+Math.round(f/total*100)+'%';await new Promise(resolve=>setTimeout(resolve,0))}}let smooth=frames.map((_,i)=>{const counts=new Map();for(let k=Math.max(0,i-4);k<=Math.min(frames.length-1,i+4);k++)counts.set(frames[k],(counts.get(frames[k])||0)+1);return [...counts].sort((a,b)=>b[1]-a[1])[0][0]});
-// Suppress brief spectral glitches instead of changing the previous timestamp's chord.
-for(let round=0;round<4;round++){let runs=[];for(let i=0;i<smooth.length;){let j=i+1;while(j<smooth.length&&smooth[j]===smooth[i])j++;runs.push({from:i,to:j,chord:smooth[i]});i=j}for(let k=0;k<runs.length;k++){const r=runs[k];if((r.to-r.from)*step/sr<1.7&&runs.length>1){const left=runs[k-1],right=runs[k+1],preferred=left&&right?(left.to-left.from>=right.to-right.from?left:right):(left||right);if(preferred)for(let x=r.from;x<r.to;x++)smooth[x]=preferred.chord}}}
-let ev=[];for(let i=0;i<smooth.length;i++){if(i===0||smooth[i]!==smooth[i-1])ev.push({time:+(i*step/sr).toFixed(2),chord:smooth[i]})}if(ev.length)ev[0].time=0;
-track.events=ev;playingIndex=-1;saveChordCorrections();$('analysisLabel').textContent=ev.length+' предполагаемых смен аккордов';$('analysisProgress').textContent='Экспериментальный анализ завершён. Проверь аккорды на слух, исправь ошибки нажатием.';renderChords();toast('Получена предварительная разметка: '+ev.length+' участков')}catch(err){$('analysisProgress').textContent='Ошибка анализа: '+err.message}finally{analysisInProgress=false;b.disabled=false}}$('analyzeBtn').onclick=analyzeTrack;
+// More robust local harmony estimation: chroma with spectral whitening, bass evidence,
+// smoothed templates and Viterbi continuity. Not a neural transcription service.
+const ANALYZER_REV='harmonic-v4';
+const CHORD_CLASSES=[];
+for(let root=0;root<12;root++)for(const [suffix,intervals,penalty] of [
+ ['',[0,4,7],0],['m',[0,3,7],0],['7',[0,4,7,10],.105],
+ ['m7',[0,3,7,10],.100],['maj7',[0,4,7,11],.145],
+ ['dim',[0,3,6],.070],['sus4',[0,5,7],.090]
+])CHORD_CLASSES.push({root,name:NOTES[root]+suffix,notes:intervals.map(n=>(root+n)%12),penalty});
+function harmonicPeak(mag,bin){const k=Math.round(bin);if(k<2||k>=mag.length-2)return 0;return Math.max(mag[k-1],mag[k],mag[k+1]);}
+function pitchChroma(mag,sr,n){
+ const whitened=new Float32Array(mag.length),prefix=new Float64Array(mag.length+1);
+ for(let k=0;k<mag.length;k++)prefix[k+1]=prefix[k]+mag[k];
+ for(let k=1;k<mag.length-1;k++){
+  const l=Math.max(1,k-10),r=Math.min(mag.length,k+11);
+  const local=(prefix[r]-prefix[l])/(r-l);
+  whitened[k]=Math.sqrt(mag[k]/Math.sqrt(local+.0001));
+ }
+ const chroma=new Float32Array(12),bass=new Float32Array(12);
+ for(let m=36;m<=88;m++){
+   const hz=440*Math.pow(2,(m-69)/12);
+   const f=hz*n/sr;
+   if(f*2>=mag.length)continue;
+   let e=harmonicPeak(whitened,f)+.27*harmonicPeak(whitened,f*2)+.11*harmonicPeak(whitened,f*3);
+   const pc=m%12;
+   // Balance octaves: avoid dominating from loud sub-bass or lead instrument.
+   const weight=m<48?.68:m>78?.55:1;
+   chroma[pc]+=e*weight;
+   if(m<61)bass[pc]+=e*(m<48?1.0:.38);
+ }
+ let total=0,base=0;for(let i=0;i<12;i++){total+=chroma[i];base+=bass[i]}
+ for(let i=0;i<12;i++){chroma[i]/=total||1;bass[i]/=base||1}
+ return {chroma,bass,energy:total};
+}
+function chordEmission(vec){
+ const values=new Float32Array(CHORD_CLASSES.length);
+ for(let c=0;c<CHORD_CLASSES.length;c++){
+  const t=CHORD_CLASSES[c];let hit=0,other=0;
+  for(let i=0;i<12;i++){if(t.notes.includes(i))hit+=vec.chroma[i];else other+=vec.chroma[i]}
+  let score=hit - other*.20 + vec.chroma[t.root]*.09+vec.bass[t.root]*.12-t.penalty;
+  if(t.notes.length===4)score-=.025;
+  values[c]=score;
+ }
+ return values;
+}
+function smoothChordFrames(raw,energy){
+ const n=raw.length,len=CHORD_CLASSES.length;
+ // Temporal average suppresses momentary melody notes and percussion hits.
+ const emissions=[];for(let i=0;i<n;i++){
+  const out=new Float32Array(len);let wsum=0;
+  for(let j=Math.max(0,i-3);j<=Math.min(n-1,i+3);j++){
+   const w=4-Math.abs(i-j);wsum+=w;
+   for(let c=0;c<len;c++)out[c]+=raw[j][c]*w;
+  }
+  for(let c=0;c<len;c++)out[c]/=wsum;
+  emissions.push(out);
+ }
+ // Dynamic programming: discourage excessive changes, but let clear new chords win.
+ let old=new Float32Array(len),prev=[];for(let c=0;c<len;c++)old[c]=emissions[0][c];
+ for(let i=1;i<n;i++){
+  const next=new Float32Array(len),back=new Uint8Array(len);
+  for(let c=0;c<len;c++){
+   let best=-Infinity,bestP=0;
+   for(let p=0;p<len;p++){
+    // Do not strongly favor seventh/sus variants unless the audio supports the change.
+    const penalty=p===c?0:(CHORD_CLASSES[p].root===CHORD_CLASSES[c].root ? 0.075 : 0.155);
+    const cand=old[p]-penalty;
+    if(cand>best){best=cand;bestP=p}
+   }
+   next[c]=best+emissions[i][c];back[c]=bestP;
+  }
+  old=next;prev.push(back);
+ }
+ let best=0;for(let c=1;c<len;c++)if(old[c]>old[best])best=c;
+ const path=new Int16Array(n);path[n-1]=best;
+ for(let i=n-2;i>=0;i--)path[i]=prev[i][path[i+1]];
+ const labels=new Array(n),certainty=new Float32Array(n);
+ for(let i=0;i<n;i++){
+  let winner=emissions[i][path[i]],runner=-Infinity;
+  for(let c=0;c<len;c++)if(c!==path[i]&&emissions[i][c]>runner)runner=emissions[i][c];
+  const diff=winner-runner;
+  certainty[i]=Math.max(0,Math.min(1,(diff+.055)*7));
+  // Do not fabricate confident chord labels in quiet or highly ambiguous areas.
+  labels[i]=energy[i]<.18?'—':(diff<-.13?'?':CHORD_CLASSES[path[i]].name);
+ }
+ // Remove isolated very short glitches. Retain meaningful changes around ~1 second.
+ for(let pass=0;pass<2;pass++){
+  const runs=[];for(let i=0;i<n;){let j=i+1;while(j<n&&labels[j]===labels[i])j++;runs.push({a:i,b:j,label:labels[i]});i=j}
+  for(let k=0;k<runs.length;k++){
+   const r=runs[k],left=runs[k-1],right=runs[k+1];
+   if(r.b-r.a<4&&r.label!=='—'&&left&&right){
+    const replacement=left.label===right.label?left.label:((left.b-left.a)>=(right.b-right.a)?left.label:right.label);
+    for(let j=r.a;j<r.b;j++)labels[j]=replacement;
+   }
+  }
+ }
+ return {labels,certainty};
+}
+async function analyzeTrack(){
+ if(analysisInProgress)return;
+ const stored=saved.edits?.[track.fileKey];
+ if(stored?.method==='manual-v4'&&track.events.length&&!confirm('Повторный анализ заменит сохранённую ручную разметку этого трека. Продолжить?'))return;
+ if(!decoded){toast('Сначала открой MP3 или WAV и дождись расшифровки спектра');return}
+ analysisInProgress=true;
+ const btn=$('analyzeBtn');btn.disabled=true;
+ const input=decoded,fileKey=track.fileKey;
+ const sr=input.sampleRate,n=16384,step=Math.max(1024,Math.floor(sr*.32));
+ const channels=Array.from({length:Math.min(2,input.numberOfChannels)},(_,i)=>input.getChannelData(i));
+ const length=channels[0].length,total=Math.max(0,Math.floor((length-n)/step)+1);
+ const re=new Float32Array(n),im=new Float32Array(n),mag=new Float32Array(n/2),win=new Float32Array(n);
+ for(let i=0;i<n;i++)win[i]=.5-.5*Math.cos(2*Math.PI*i/(n-1));
+ const emissions=[],energy=[],levels=[];
+ try{
+  if(!total)throw Error('Запись слишком короткая');
+  for(let frame=0;frame<total;frame++){
+   if(fileKey!==track.fileKey||decoded!==input)return;
+   const at=frame*step;let rms=0;
+   for(let i=0;i<n;i++){
+    let sample=0;for(const chan of channels)sample+=chan[at+i]||0;
+    sample/=channels.length;rms+=sample*sample;
+    re[i]=sample*win[i];im[i]=0;
+   }
+   fft(re,im);
+   for(let i=0;i<mag.length;i++)mag[i]=Math.hypot(re[i],im[i]);
+   const features=pitchChroma(mag,sr,n);
+   emissions.push(chordEmission(features));energy.push(features.energy);levels.push(Math.sqrt(rms/n));
+   if(frame%24===0){$('analysisProgress').textContent='Уточнение аккордов: '+Math.round(frame/total*100)+'%';await new Promise(resolve=>setTimeout(resolve,0))}
+  }
+  const norm=levels.slice().sort((a,b)=>a-b)[Math.floor(levels.length*.70)]||.001;
+  const normalized=levels.map(x=>x/(norm||1));
+  const result=smoothChordFrames(emissions,normalized);
+  const events=[];let uncertain=0;
+  for(let i=0;i<result.labels.length;i++){
+   const label=result.labels[i];if(i===0||label!==result.labels[i-1]){
+    // The analysis is centered within the FFT window; onset time is an estimate.
+    const time=Math.max(0,i*step/sr+n/(2*sr)-.10);
+    events.push({time:+time.toFixed(2),chord:label,confidence:+result.certainty[i].toFixed(2),source:ANALYZER_REV});
+    if(label==='?'||label==='—')uncertain++;
+   }
+  }
+  if(events.length)events[0].time=0;
+  if(fileKey!==track.fileKey||decoded!==input)return;
+  track.events=events;playingIndex=-1;
+  // CRITICAL: automatic guesses are never stored in the manual edits cache.
+  if(saved.edits?.[fileKey]&&stored?.method!=='manual-v4'){
+   delete saved.edits[fileKey];persist();
+  }else if(stored?.method==='manual-v4'){
+   delete saved.edits[fileKey];persist();
+  }
+  $('analysisLabel').textContent=events.length+' предварительных участков';
+  $('analysisProgress').textContent='Обновлённый спектральный анализ: '+uncertain+' неопределённых участков. Проверь по слуху: точная расшифровка сложной записи не гарантируется.';
+  renderChords();highlightForTime(audio.currentTime||0);
+  toast('Найдены приблизительные аккорды: '+events.length+' участков');
+ }catch(err){$('analysisProgress').textContent='Ошибка анализа: '+err.message}
+ finally{analysisInProgress=false;btn.disabled=false}
+}
+$('analyzeBtn').onclick=analyzeTrack;
 
 const MAJOR_SCALES=[
  ['C','D','E','F','G','A','B'],
