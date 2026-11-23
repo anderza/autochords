@@ -359,8 +359,8 @@ public class MainActivity extends Activity {
 
     private double detectGuitarPitch(short[] samples, int n, int sampleRate) {
         if (n < 2048) return 0;
-        final int minLag = sampleRate / 425;
-        final int maxLag = Math.min(sampleRate / 65, n / 2 - 2);
+        final int minLag = sampleRate / 475;
+        final int maxLag = Math.min(sampleRate / 28, n / 2 - 2);
         if (maxLag <= minLag) return 0;
         final int window = Math.min(4096, n - maxLag);
         double[] normalized = new double[maxLag + 2];
@@ -392,7 +392,7 @@ public class MainActivity extends Activity {
         double correction = Math.abs(denom) > 1e-10
                 ? Math.max(-0.5, Math.min(0.5, (a - c) / (2 * denom))) : 0;
         double frequency = sampleRate / (chosen + correction);
-        return frequency >= 64 && frequency <= 435 ? frequency : 0;
+        return frequency >= 29 && frequency <= 475 ? frequency : 0;
     }
 
     @Override protected void onPause() {
