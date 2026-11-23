@@ -1,4 +1,4 @@
-name: Build Auto Chords APK
+name: Build AutoChords APK
 
 on:
   push:
@@ -34,15 +34,43 @@ jobs:
       - name: Store downloadable APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Auto-Chords-debug-APK
+          name: AutoChords-debug-APK
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
 
-      - name: Publish preview APK to Releases
+      - name: Publish named versioned AutoChords release
         if: github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
+        shell: bash
         run: |
-          gh release view preview >/dev/null 2>&1 || gh release create preview --target "$GITHUB_SHA" --title "Auto Chords — предварительная APK" --notes "Экспериментальная Android-сборка. Подпись debug может меняться между сборками; для обновления поверх установленной версии понадобится постоянный ключ подписи." --prerelease --latest=false
-          gh release upload preview app/build/outputs/apk/debug/app-debug.apk --clobber
+          set -euo pipefail
+          VERSION="$(sed -n "s/.*versionName ['\"]\([^'\"]*\)['\"].*/\1/p" app/build.gradle | head -n 1)"
+          if [[ -z "$VERSION" ]]; then
+            echo "Could not read Android versionName"
+            exit 1
+          fi
+
+          TAG="v${VERSION}"
+          TITLE="AutoChords v${VERSION}"
+          APK="app/build/outputs/apk/debug/app-debug.apk"
+          ASSET="AutoChords-v${VERSION}.apk"
+          NOTES="AutoChords ${VERSION} — предварительная Android APK (debug).
+
+          Эта сборка использует отладочную подпись. Обновление поверх предыдущих APK может не работать, если ключ подписи отличается."
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release edit "$TAG" --title "$TITLE" --notes "$NOTES" --prerelease
+          else
+            gh release create "$TAG" --target "$GITHUB_SHA" --title "$TITLE" --notes "$NOTES" --prerelease --latest=false
+          fi
+          gh release upload "$TAG" "${APK}#${ASSET}" --clobber
+
+          # Keep the old preview URL working for installed/test versions.
+          if gh release view preview >/dev/null 2>&1; then
+            gh release edit preview --title "${TITLE} — preview" --notes "$NOTES" --prerelease
+          else
+            gh release create preview --target "$GITHUB_SHA" --title "${TITLE} — preview" --notes "$NOTES" --prerelease --latest=false
+          fi
+          gh release upload preview "$APK" --clobber
