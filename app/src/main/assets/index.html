@@ -162,6 +162,31 @@ button{font-variant-numeric:tabular-nums;text-align:center;display:inline-flex;a
 /* v0.4: clearly identify uncertain harmony instead of inventing precision */
 .chord-btn.uncertain{background:linear-gradient(155deg,#25283a,#121522);border-style:dashed;color:#9da5bb}
 .chord-btn.uncertain .chord-label{opacity:.7}
+
+/* AutoChords 0.5: continuous, centered lyric-style chord ribbon (local tracks only). */
+#track .chord-rail-stage{position:relative;border:1px solid #3a3e59;border-radius:14px;background:linear-gradient(160deg,#171b2d 0%,#0b101d 100%);margin:12px -1px 6px;padding:14px 0 12px;box-shadow:inset 0 0 40px #0005,0 12px 22px #0003;overflow:hidden}
+#track .chord-rail-heading{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:0 15px;margin-bottom:7px}
+#track .chord-rail-heading strong{font-size:11px;font-weight:760;letter-spacing:.14em;color:#a6acc9;text-transform:uppercase}
+#track .chord-rail-heading .rail-index{font:600 11px/1.3 ui-sans-serif,system-ui,sans-serif;color:#a99cc7}
+#track .chord-rail-viewport{position:relative;overflow:hidden;width:100%;height:108px;mask-image:linear-gradient(90deg,transparent 0%,#000 9%,#000 91%,transparent 100%);-webkit-mask-image:linear-gradient(90deg,transparent 0%,#000 9%,#000 91%,transparent 100%)}
+#track .chord-rail-track{width:max-content;display:flex;align-items:stretch;height:100%;transform:translate3d(0,0,0);transition:transform .17s cubic-bezier(.24,.85,.25,1);will-change:transform}
+#track .chord-rail-item{flex:0 0 104px;min-width:104px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;padding:10px 2px 13px;border:0;border-radius:0;background:transparent;color:#8c95af;box-shadow:none;position:relative;white-space:nowrap;transition:color .12s,opacity .12s;text-align:center}
+#track .chord-rail-item .rail-symbol{font-size:19px;font-weight:800;line-height:1.2;letter-spacing:-.035em;transition:font-size .12s;white-space:nowrap}
+#track .chord-rail-item .rail-timestamp{font-variant-numeric:tabular-nums;font-size:10px;letter-spacing:.015em;color:inherit;opacity:.65}
+#track .chord-rail-item.past{color:#545b73;opacity:.6}
+#track .chord-rail-item.future{color:#aba9cc;opacity:.94}
+#track .chord-rail-item.playing{color:#fff;opacity:1;text-shadow:0 0 15px #e7c9ff55}
+#track .chord-rail-item.playing .rail-symbol{font-size:29px;font-weight:860}
+#track .chord-rail-item.playing .rail-timestamp{color:#d9ccf5;opacity:1}
+#track .chord-rail-item.playing:after{content:'';position:absolute;bottom:8px;left:30%;width:40%;height:3px;border-radius:4px;background:linear-gradient(90deg,#ad62ff,#e0a4ff);box-shadow:0 0 11px #a55fff99}
+#track .chord-rail-item.uncertain .rail-symbol{text-decoration:underline dotted #a298b2;text-underline-offset:7px}
+#track .chord-rail-focus{pointer-events:none;position:absolute;top:1px;left:50%;bottom:12px;width:1px;background:linear-gradient(180deg,transparent,#ae71ff44 65%,transparent);z-index:1}
+#track .chord-rail-bottom{padding:10px 15px 1px;display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:43px}
+#track #nowChord{font-size:12px;color:#e7dbff;font-weight:750;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#track .rail-edit{font-size:11px;flex:none;padding:7px 9px;color:#d8cbef;border:1px solid #44415f;background:#27233d;border-radius:6px}
+#track .rail-hint{font-size:10px;color:#8994b2;line-height:1.45;margin:8px 4px 4px}
+@media(max-width:360px){#track .chord-rail-item{flex-basis:88px;min-width:88px}#track .chord-rail-item.playing .rail-symbol{font-size:25px}}
+@media(prefers-reduced-motion:reduce){#track .chord-rail-track,#track .chord-rail-item{transition:none}}
 </style></head>
 <body><div class="app" id="app">
 <header class="topbar"><div class="brand" id="brand"><svg viewBox="0 0 44 44" aria-hidden="true" fill="none" stroke-linecap="round" stroke-width="3.6"><path d="M3 20v4" stroke="#4cc9ff"/><path d="M9 14v16" stroke="#75adff"/><path d="M15 6v32" stroke="#a96bff"/><path d="M21 16v12" stroke="#d68bff"/><path d="M27 10v24" stroke="#8e66ff"/><path d="M33 17v10" stroke="#5ac4ff"/><path d="M40 20v4" stroke="#6d9cff"/></svg><span>Auto <strong>Chords</strong></span></div><div class="topactions"><button class="pro" id="proBtn" title="О версии приложения">✦ Studio</button><button class="tiny-action" id="settingsBtn" aria-label="Настройки инструмента">⚙</button></div></header>
@@ -181,7 +206,7 @@ button{font-variant-numeric:tabular-nums;text-align:center;display:inline-flex;a
 <section class="screen track-screen" id="track"><div class="screen-head"><button class="back" data-open="library" aria-label="Назад">‹</button><div class="track-head" style="flex:1"><h1 id="trackTitle">Название трека</h1><p id="trackArtist">Редактор аккордов</p></div><button class="icon-btn" id="favoriteBtn" aria-label="В избранное">♡</button><button class="icon-btn" id="trackSettings" aria-label="Настройки">⋮</button></div>
  <canvas class="wave" id="wave" width="800" height="170" aria-label="Звуковая волна, коснись для перемотки"></canvas><div class="track-time"><span id="timeTop">0:00</span><span id="timeTotal">0:00</span></div>
  <div class="tabs" id="trackTabs"><button data-tab="chords" class="active">Аккорды</button><button data-tab="lyrics">Текст</button><button data-tab="tabs">Табы</button><button data-tab="key">Тональность</button></div>
- <div class="track-pane active" id="pane-chords"><div class="chord-toolbar"><span class="subtitle" id="analysisLabel">Открой трек или добавь аккорды</span><button class="btn small" id="analyzeBtn">✧ Анализировать</button><button class="btn small" id="addChordBtn">＋</button><button class="btn small" id="exportBtn">↓ JSON</button></div><div id="analysisProgress" class="small-note"></div><div id="chordList" aria-live="off" aria-label="Сетка 4 на 4: 16 аккордов"></div></div>
+ <div class="track-pane active" id="pane-chords"><div class="chord-toolbar"><span class="subtitle" id="analysisLabel">Открой трек или добавь аккорды</span><button class="btn small" id="analyzeBtn">✧ Анализировать</button><button class="btn small" id="addChordBtn">＋</button><button class="btn small" id="exportBtn">↓ JSON</button></div><div id="analysisProgress" class="small-note"></div><div id="chordList" aria-live="off" aria-label="Горизонтальная лента аккордов песни"></div></div>
  <div class="track-pane" id="pane-lyrics"><p class="small-note">Введи свой текст песни. Текст сохраняется в браузере для этого проекта.</p><textarea class="input lyrics-box" id="lyricsText" placeholder="Текст песни или заметки..." aria-label="Текст песни"></textarea></div>
  <div class="track-pane" id="pane-tabs">
   <div class="tab-intro"><div><strong>Табулатура аккордов</strong><span>6 струн · синхронизация с плеером</span></div><button class="btn small" id="tabEditCurrent">✎ Править</button></div>
@@ -219,7 +244,7 @@ function renderLists(){
  if(!favorites.length)fav.innerHTML='<div class="placeholder">В избранном пока нет песен. Нажми ♡ в редакторе трека.</div>';
  else favorites.forEach(name=>fav.append(recentButton(name,'Избранная композиция','★',()=>$('audioInput').click())));
 }
-function newTrack(name,artist){if(audioUrl){URL.revokeObjectURL(audioUrl);audioUrl=''}audio.removeAttribute('src');audio.load();fileBuffer=null;decoded=null;waveData=null;track={name,artist,events:[],lyrics:'',tabs:'',duration:0,fileKey:null};let note=saved.notes?.[name];if(note){track.lyrics=note.lyrics||'';track.tabs=note.tabs||''}playingIndex=-1;lastScrollIndex=-1;chordPage=0;tabPage=0;$('trackTitle').textContent=name;$('trackArtist').textContent=artist;$('playerTitle').textContent=name;$('lyricsText').value=track.lyrics;$('tabsText').value=track.tabs;$('analysisProgress').textContent='';$('analysisLabel').textContent='Нет разметки · открой аудиофайл';$('timeTotal').textContent='0:00';$('timeTop').textContent='0:00';$('playerTime').textContent='0:00 / 0:00';$('playBtn').textContent='▶';updateFav();renderChords();drawWave();switchTab('chords')}
+function newTrack(name,artist){if(audioUrl){URL.revokeObjectURL(audioUrl);audioUrl=''}audio.removeAttribute('src');audio.load();fileBuffer=null;decoded=null;waveData=null;track={name,artist,events:[],lyrics:'',tabs:'',duration:0,fileKey:null};let note=saved.notes?.[name];if(note){track.lyrics=note.lyrics||'';track.tabs=note.tabs||''}playingIndex=-1;lastScrollIndex=-1;chordPage=0;tabPage=0;railLastIndex=-2;$('trackTitle').textContent=name;$('trackArtist').textContent=artist;$('playerTitle').textContent=name;$('lyricsText').value=track.lyrics;$('tabsText').value=track.tabs;$('analysisProgress').textContent='';$('analysisLabel').textContent='Нет разметки · открой аудиофайл';$('timeTotal').textContent='0:00';$('timeTop').textContent='0:00';$('playerTime').textContent='0:00 / 0:00';$('playBtn').textContent='▶';updateFav();renderChords();drawWave();switchTab('chords')}
 function attachAudioFile(file){
  if(!file)return;newTrack(file.name.replace(/\.[^.]+$/,''),'Локальный файл');fileBuffer=file;
  audioUrl=URL.createObjectURL(file);audio.src=audioUrl;audio.load();track.fileKey=file.name+'|'+file.size;
@@ -236,14 +261,67 @@ function attachAudioFile(file){
 }
 $('chooseAudio').onclick=()=>$('audioInput').click();
 $('audioInput').onchange=e=>{attachAudioFile(e.target.files?.[0]);e.target.value=''};
-audio.onloadedmetadata=()=>{track.duration=audio.duration||track.duration;updateTime();drawWave()};audio.ontimeupdate=()=>{updateTime();highlightForTime(audio.currentTime)};audio.onseeked=()=>{updateTime();highlightForTime(audio.currentTime)};audio.onplay=()=>{$('playBtn').textContent='Ⅱ'};audio.onpause=()=>{$('playBtn').textContent='▶'};audio.onended=()=>{$('playBtn').textContent='▶'};audio.onerror=()=>toast('Не удалось прочитать аудио. Попробуй MP3 или WAV.');function updateTime(){let t=audio.currentTime||0,d=audio.duration||track.duration||0;$('timeTop').textContent=fmt(t);$('timeTotal').textContent=fmt(d);$('playerTime').textContent=fmt(t)+' / '+fmt(d);$('seek').value=d?Math.floor(t/d*1000):0;drawWave()}$('seek').oninput=e=>{const d=audio.duration||track.duration;if(audio.src&&d)audio.currentTime=d*Number(e.target.value)/1000;else toast('Сначала открой аудиофайл')};$('playBtn').onclick=async()=>{if(!audio.src){toast('Открой аудиофайл из локальной папки для воспроизведения');$('audioInput').click();return}try{if(audio.paused)await audio.play();else audio.pause()}catch{toast('Воспроизведение недоступно для этого формата')}};function currentEventIndex(t){const a=track.events;if(!a.length)return -1;let lo=0,hi=a.length-1;while(lo<hi){const m=Math.ceil((lo+hi)/2);if(a[m].time<=t)lo=m;else hi=m-1}return lo}
-function highlightForTime(t){const next=currentEventIndex(Math.max(0,t));playingIndex=next;if(screen!=='track')return;if(activeTab==='chords'){const wanted=Math.floor(Math.max(0,next)/CHORDS_PER_PAGE);if(next>=0&&wanted!==chordPage)paintChordPage(wanted);else{$$('#chordList .chord-btn').forEach(b=>{const yes=Number(b.dataset.event)===next;b.classList.toggle('playing',yes);if(yes)b.setAttribute('aria-current','true');else b.removeAttribute('aria-current')});setChordCounter()}}if(activeTab==='tabs'){const wanted=Math.floor(Math.max(0,next)/CHORDS_PER_PAGE);if(next>=0&&wanted!==tabPage)renderTabScore(wanted);else updateTabHighlight()}}
+audio.onloadedmetadata=()=>{track.duration=audio.duration||track.duration;updateTime();drawWave()};audio.ontimeupdate=()=>{updateTime();highlightForTime(audio.currentTime)};audio.onseeked=()=>{updateTime();highlightForTime(audio.currentTime)};let chordSyncFrame=0;
+function frameSync(){if(audio.paused||audio.ended){chordSyncFrame=0;return}highlightForTime(audio.currentTime);chordSyncFrame=requestAnimationFrame(frameSync)}
+audio.onplay=()=>{$('playBtn').textContent='Ⅱ';if(!chordSyncFrame)chordSyncFrame=requestAnimationFrame(frameSync)};
+audio.onpause=()=>{$('playBtn').textContent='▶';if(chordSyncFrame)cancelAnimationFrame(chordSyncFrame);chordSyncFrame=0;highlightForTime(audio.currentTime)};
+audio.onended=()=>{$('playBtn').textContent='▶';if(chordSyncFrame)cancelAnimationFrame(chordSyncFrame);chordSyncFrame=0;highlightForTime(audio.currentTime)};audio.onerror=()=>toast('Не удалось прочитать аудио. Попробуй MP3 или WAV.');function updateTime(){let t=audio.currentTime||0,d=audio.duration||track.duration||0;$('timeTop').textContent=fmt(t);$('timeTotal').textContent=fmt(d);$('playerTime').textContent=fmt(t)+' / '+fmt(d);$('seek').value=d?Math.floor(t/d*1000):0;drawWave()}$('seek').oninput=e=>{const d=audio.duration||track.duration;if(audio.src&&d)audio.currentTime=d*Number(e.target.value)/1000;else toast('Сначала открой аудиофайл')};$('playBtn').onclick=async()=>{if(!audio.src){toast('Открой аудиофайл из локальной папки для воспроизведения');$('audioInput').click();return}try{if(audio.paused)await audio.play();else audio.pause()}catch{toast('Воспроизведение недоступно для этого формата')}};function currentEventIndex(t){const a=track.events;if(!a.length)return -1;let lo=0,hi=a.length-1;while(lo<hi){const m=Math.ceil((lo+hi)/2);if(a[m].time<=t)lo=m;else hi=m-1}return lo}
+function highlightForTime(t){
+ const next=currentEventIndex(Math.max(0,t));playingIndex=next;
+ if(screen!=='track')return;
+ if(activeTab==='chords')updateChordRail(next);
+ if(activeTab==='tabs'){
+  const wanted=Math.floor(Math.max(0,next)/CHORDS_PER_PAGE);
+  if(next>=0&&wanted!==tabPage)renderTabScore(wanted);else updateTabHighlight();
+ }
+}
 function seekEvent(i){if(i<0||i>=track.events.length)return;if(audio.src){audio.currentTime=track.events[i].time;updateTime()}else toast('Выбран '+track.events[i].chord+' · для воспроизведения открой аудиофайл');highlightForTime(track.events[i].time)}
 $('prevChord').onclick=()=>{let i=currentEventIndex(audio.currentTime||0);seekEvent(Math.max(0,i-1))};$('nextChord').onclick=()=>{let i=currentEventIndex(audio.currentTime||0);seekEvent(Math.min(track.events.length-1,i+1))};
-$('loopBtn').onclick=()=>{$('loopToggle').checked=!$('loopToggle').checked;applyLoop()};function applyLoop(){audio.loop=$('loopToggle').checked;settings.loop=audio.loop;$('loopBtn').classList.toggle('loop-on',audio.loop)}function switchTab(s){activeTab=s;$$('#trackTabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===s));$$('.track-pane').forEach(p=>p.classList.toggle('active',p.id==='pane-'+s));if(s==='chords')highlightForTime(audio.currentTime||0);if(s==='tabs')renderTabScore(Math.floor(Math.max(0,currentEventIndex(audio.currentTime||0))/CHORDS_PER_PAGE))}$$('#trackTabs button').forEach(b=>b.onclick=()=>switchTab(b.dataset.tab));$('lyricsText').oninput=e=>saveNote('lyrics',e.target.value);$('tabsText').oninput=e=>saveNote('tabs',e.target.value);function saveNote(k,v){track[k]=v;saved.notes ||= {};saved.notes[track.name] ||= {};saved.notes[track.name][k]=v;persist()}$('favoriteBtn').onclick=()=>{if(!track.name)return;favorites=favorites.includes(track.name)?favorites.filter(n=>n!==track.name):[track.name,...favorites];persist();updateFav()};function updateFav(){$('favoriteBtn').textContent=favorites.includes(track.name)?'♥':'♡';$('favoriteBtn').style.color=favorites.includes(track.name)?'#e89aff':''}
+$('loopBtn').onclick=()=>{$('loopToggle').checked=!$('loopToggle').checked;applyLoop()};function applyLoop(){audio.loop=$('loopToggle').checked;settings.loop=audio.loop;$('loopBtn').classList.toggle('loop-on',audio.loop)}function switchTab(s){activeTab=s;$$('#trackTabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===s));$$('.track-pane').forEach(p=>p.classList.toggle('active',p.id==='pane-'+s));if(s==='chords'){highlightForTime(audio.currentTime||0);requestAnimationFrame(()=>updateChordRail(currentEventIndex(audio.currentTime||0),true))};if(s==='tabs')renderTabScore(Math.floor(Math.max(0,currentEventIndex(audio.currentTime||0))/CHORDS_PER_PAGE))}$$('#trackTabs button').forEach(b=>b.onclick=()=>switchTab(b.dataset.tab));$('lyricsText').oninput=e=>saveNote('lyrics',e.target.value);$('tabsText').oninput=e=>saveNote('tabs',e.target.value);function saveNote(k,v){track[k]=v;saved.notes ||= {};saved.notes[track.name] ||= {};saved.notes[track.name][k]=v;persist()}$('favoriteBtn').onclick=()=>{if(!track.name)return;favorites=favorites.includes(track.name)?favorites.filter(n=>n!==track.name):[track.name,...favorites];persist();updateFav()};function updateFav(){$('favoriteBtn').textContent=favorites.includes(track.name)?'♥':'♡';$('favoriteBtn').style.color=favorites.includes(track.name)?'#e89aff':''}
 const CHORDS_PER_PAGE=16;
 function setChordCounter(){const name=$('nowChord');if(!name)return;const ev=track.events[playingIndex];name.textContent=ev?('Сейчас: '+transposeChord(ev.chord,settings.transpose)+' · '+fmt(ev.time)):'Аккорды не определены';}
-function paintChordPage(page){const list=$('chordList');const n=track.events.length;list.replaceChildren();if(!n){list.innerHTML='<div class="placeholder">Пока нет аккордов. Открой MP3 и запусти анализ или добавь аккорд вручную.</div>';return}const pages=Math.ceil(n/CHORDS_PER_PAGE);chordPage=Math.max(0,Math.min(page,pages-1));const first=chordPage*CHORDS_PER_PAGE;const toolbar=document.createElement('div');toolbar.className='chord-pagebar';const prev=document.createElement('button');prev.textContent='❮';prev.type='button';prev.title='Предыдущие 16 аккордов';prev.disabled=chordPage===0;prev.onclick=()=>paintChordPage(chordPage-1);const label=document.createElement('div');label.className='pager-label';label.innerHTML='<span>Сетка 4×4 · '+(chordPage+1)+' / '+pages+'</span><small>'+(first+1)+'–'+Math.min(first+16,n)+' из '+n+' · автоматический переход</small><span id="nowChord"></span>';const next=document.createElement('button');next.textContent='❯';next.type='button';next.title='Следующие 16 аккордов';next.disabled=chordPage===pages-1;next.onclick=()=>paintChordPage(chordPage+1);toolbar.append(prev,label,next);const grid=document.createElement('div');grid.className='chord-grid';grid.setAttribute('role','group');grid.setAttribute('aria-label','16 аккордов, 4 столбца и 4 строки');for(let k=0;k<CHORDS_PER_PAGE;k++){let i=first+k,ev=track.events[i],cell=document.createElement('div'),btn=document.createElement('button');cell.className='chord-block';btn.type='button';btn.className='chord-btn'+(playingIndex===i&&ev?' playing':'')+(ev&&(ev.chord==='?'||ev.chord==='—')?' uncertain':'');if(ev){btn.dataset.event=i;btn.id='event-'+i;btn.innerHTML='<span class="chord-label">'+esc(transposeChord(ev.chord,settings.transpose))+'</span><span class="editcue">✎</span><small class="chord-stamp">'+fmt(ev.time)+'</small>';btn.setAttribute('aria-label',ev.chord+', '+fmt(ev.time)+', перемотать и изменить');if(ev.source===ANALYZER_REV)btn.title='Автоматическая оценка · точность не гарантирована';if(playingIndex===i)btn.setAttribute('aria-current','true');btn.onclick=()=>{seekEvent(i);openChordEditor(i)}}else{btn.disabled=true;btn.textContent='—';btn.setAttribute('aria-label','Пустая ячейка')}cell.append(btn);grid.append(cell)}list.append(toolbar,grid);setChordCounter()}
+let railLastIndex=-2;
+function renderChordRail(){
+ const host=$('chordList');host.replaceChildren();railLastIndex=-2;
+ if(!track.events.length){host.innerHTML='<div class="placeholder">Открой MP3 или WAV: здесь появится непрерывная лента аккордов. Для точности автоматическую разметку необходимо проверять на слух.</div>';return}
+ const stage=document.createElement('div');stage.className='chord-rail-stage';
+ const heading=document.createElement('div');heading.className='chord-rail-heading';
+ heading.innerHTML='<strong>АККОРДЫ ТРЕКА</strong><span class="rail-index" id="railIndex">0 / 0</span>';
+ const viewport=document.createElement('div');viewport.className='chord-rail-viewport';viewport.id='chordRailViewport';viewport.setAttribute('role','group');viewport.setAttribute('aria-label','Предыдущие аккорды слева, текущий по центру, следующие справа');
+ const lane=document.createElement('div');lane.className='chord-rail-track';lane.id='chordRailTrack';
+ track.events.forEach((ev,i)=>{
+  const btn=document.createElement('button');btn.type='button';btn.className='chord-rail-item';btn.dataset.event=String(i);
+  if(ev.chord==='?'||ev.chord==='—')btn.classList.add('uncertain');
+  btn.innerHTML='<span class="rail-symbol">'+esc(transposeChord(ev.chord,settings.transpose))+'</span><span class="rail-timestamp">'+fmt(ev.time)+'</span>';
+  btn.setAttribute('aria-label',ev.chord+' в '+fmt(ev.time)+'. Нажми для перемотки, двойное нажатие — редактор.');
+  if(ev.source===ANALYZER_REV)btn.title='Предполагаемый аккорд — результат спектрального анализа';
+  btn.onclick=()=>seekEvent(i);btn.ondblclick=()=>openChordEditor(i);
+  lane.append(btn);
+ });
+ const guide=document.createElement('span');guide.className='chord-rail-focus';guide.setAttribute('aria-hidden','true');
+ viewport.append(lane,guide);
+ const bottom=document.createElement('div');bottom.className='chord-rail-bottom';
+ const now=document.createElement('span');now.id='nowChord';now.setAttribute('aria-live','polite');
+ const edit=document.createElement('button');edit.type='button';edit.className='rail-edit';edit.textContent='✎ Править';edit.onclick=()=>{const n=currentEventIndex(audio.currentTime||0);if(n>=0)openChordEditor(n)};
+ bottom.append(now,edit);stage.append(heading,viewport,bottom);
+ host.append(stage);
+ const hint=document.createElement('p');hint.className='rail-hint';hint.textContent='Нажми аккорд для перемотки; «Править» — изменить его или время. Автоопределение приблизительное.';host.append(hint);
+ updateChordRail(currentEventIndex(audio.currentTime||0),true);
+}
+function updateChordRail(index,force=false){
+ const lane=$('chordRailTrack'),viewport=$('chordRailViewport');if(!lane||!viewport||!viewport.clientWidth||!track.events.length)return;
+ if(railLastIndex===index&&!force)return;
+ const prev=railLastIndex;railLastIndex=index;
+ const current=lane.children[Math.max(0,index)];if(!current)return;
+ for(const node of lane.children){const i=Number(node.dataset.event),active=i===index;node.classList.toggle('playing',active);node.classList.toggle('past',i<index);node.classList.toggle('future',i>index);if(active)node.setAttribute('aria-current','true');else node.removeAttribute('aria-current')}
+ const shift=Math.round(viewport.clientWidth/2-(current.offsetLeft+current.offsetWidth/2));
+ // Seek events should jump straight to the requested chord; ordinary transitions ease across one step.
+ if(force||Math.abs(index-prev)>1){lane.style.transition='none';lane.style.transform='translate3d('+shift+'px,0,0)';void lane.offsetHeight;lane.style.transition='';}
+ else lane.style.transform='translate3d('+shift+'px,0,0)';
+ const counter=$('railIndex');if(counter)counter.textContent=(index+1)+' / '+track.events.length;
+ setChordCounter();
+}
+window.addEventListener('resize',()=>{if(screen==='track'&&activeTab==='chords')requestAnimationFrame(()=>updateChordRail(currentEventIndex(audio.currentTime||0),true))});
 function updateTabHighlight(){
  $$('#tabScore [data-tab-event]').forEach(node=>{const active=Number(node.dataset.tabEvent)===playingIndex;node.classList.toggle('active',active);if(active)node.setAttribute('aria-current','true');else node.removeAttribute('aria-current')});
 }
@@ -262,7 +340,7 @@ function renderTabScore(page=tabPage){
 }
 $('tabPrev').onclick=()=>renderTabScore(tabPage-1);$('tabNext').onclick=()=>renderTabScore(tabPage+1);
 $('tabEditCurrent').onclick=()=>{if(!track.events.length){toast('Сначала добавь аккорд в трек');return}const i=playingIndex>=0?playingIndex:tabPage*16;openChordEditor(Math.min(i,track.events.length-1))};
-function renderChords(){const i=currentEventIndex(audio.currentTime||0);playingIndex=i;paintChordPage(Math.floor(Math.max(0,i)/CHORDS_PER_PAGE));if(activeTab==='tabs')renderTabScore(Math.floor(Math.max(0,i)/CHORDS_PER_PAGE))}
+function renderChords(){const i=currentEventIndex(audio.currentTime||0);playingIndex=i;renderChordRail();if(activeTab==='tabs')renderTabScore(Math.floor(Math.max(0,i)/CHORDS_PER_PAGE))}
 function saveChordCorrections(){if(track.fileKey){saved.edits ||= {};saved.edits[track.fileKey]={method:'manual-v4',events:track.events.map(e=>({time:e.time,chord:e.chord,frets:e.frets,confidence:e.confidence}))};persist()}}
 $('exportBtn').onclick=()=>{if(!track.events.length){toast('Нет аккордов для экспорта');return}const blob=new Blob([JSON.stringify({track:track.name,method:'manual chord edits or experimental browser spectral estimation; tablature based on voicings, not transcription',events:track.events,lyrics:track.lyrics,tabs:track.tabs},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(track.name||'track').replace(/[^\wа-яё -]+/gi,'_')+'_chords.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};$('addChordBtn').onclick=()=>{let t=audio.currentTime||0;track.events.push({time:t,chord:'C',confidence:1,source:'manual'});track.events.sort((a,b)=>a.time-b.time);saveChordCorrections();renderChords();openChordEditor(track.events.findIndex(e=>e.time===t&&e.chord==='C'))};$('trackSettings').onclick=()=>navigate('settings');$('goSettings').onclick=()=>navigate('settings');
 // Guitar string order in stored positions: low E, A, D, G, B, high e.
