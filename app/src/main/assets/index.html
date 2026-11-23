@@ -202,7 +202,7 @@ html{background:#050505}body{background:radial-gradient(ellipse 45% 24% at 52% -
 .input,.field select,.field input,.field textarea{background:#211f22;border:1px solid #50464a;color:#f9f7f6;border-radius:9px}
 .nav{background:#1c1b1cf5;border-top:1px solid #3b3232;min-height:69px;padding-top:6px}.nav button{color:#a3a0a0}.nav button.on{color:#ff8b30}.nav button.on svg{filter:drop-shadow(0 0 4px #ffa14755)}.nav svg{width:21px;height:21px}
 .track-screen{padding:0 13px 163px}.track-screen .screen-head{margin-bottom:9px}.track-head h1{font-size:17px}.track-head p{color:#c9b6ab}
-.song-summary{display:flex;align-items:center;gap:10px;padding:10px;margin:2px 0 14px;min-width:0}.song-art{width:58px;height:58px;flex:0 0 58px;display:grid;place-items:center;font-size:26px;color:#fff;border-radius:11px;background:linear-gradient(150deg,#773e25,#271319 48%,#eb7c23);box-shadow:0 6px 20px #0007}.song-summary-meta{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}.song-summary-meta b{font-size:17px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.song-summary-meta span{font-size:12px;color:#bbb5b1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.song-summary-meta small{font-size:10px;color:#ff9a3f}.song-info-btn{border:0;color:#ff9a3f;background:none;font-size:21px;padding:5px 7px}
+.song-summary{display:flex;align-items:center;gap:10px;padding:10px;margin:2px 0 14px;min-width:0}.song-art{width:58px;height:58px;flex:0 0 58px;display:grid;place-items:center;font-size:26px;color:#fff;border-radius:11px;background:linear-gradient(150deg,#773e25,#271319 48%,#eb7c23);box-shadow:0 6px 20px #0007}.song-summary-meta{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}.song-summary-meta b{font-size:17px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.song-summary-meta span{font-size:12px;color:#bbb5b1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.song-summary-meta small{font-size:10px;color:#ff9a3f}.song-info-btn{border:0;color:#ff9a3f;background:none;font-size:21px;padding:5px 7px}.song-folder-btn{display:grid;place-items:center;flex:0 0 46px;width:46px;height:46px;border:1px solid #a75b2c;border-radius:11px;background:linear-gradient(145deg,#41241a,#201919);color:#ff9c43;padding:0;box-shadow:inset 0 1px 0 #ffffff1c}.song-folder-btn:active{background:#61301b}.song-folder-btn svg{width:24px;height:24px}
 .wave{height:74px}.track-time{margin-bottom:10px;color:#bdb6b0}.tabs{gap:2px;padding:3px;background:#252427;border:1px solid #393437;border-radius:12px;overflow:visible}.tabs button{border:0;border-radius:9px;padding:10px 4px;font-size:12px;font-weight:650;color:#d4d0ce}.tabs button.active{background:linear-gradient(155deg,#ffab4e,#e66c02);color:white;box-shadow:0 3px 13px #e36c1160}
 .track-pane.active{margin-top:10px}.chord-toolbar{margin:6px 0 8px}.chord-toolbar .subtitle{flex-basis:100%;margin-bottom:2px;font-size:11px}.chord-toolbar .btn{padding:6px 9px}
 .track-player{height:84px;bottom:69px;background:#19191cfa;border-top:1px solid #453028;padding:8px 12px 8px;box-shadow:0 -10px 26px #0007}.player-seek{margin-bottom:7px}.slider{accent-color:#fa8121}.player-row{gap:6px}.player-row button{min-width:30px;color:#e3e0de}.player-row .play-main{padding:0!important;min-width:50px;width:50px;height:50px;display:flex!important;align-items:center!important;justify-content:center!important;flex:none;background:linear-gradient(145deg,#ffb45d 0%,#ff8c28 47%,#d65b00 100%);border:1px solid #ffa95e;box-shadow:0 0 18px #fd751d60;border-radius:50%;line-height:0}.play-main svg{width:28px;height:28px;display:block;flex:none;position:relative;left:0}.player-row .loop-on{color:#ff9f4b}.player-info strong{font-size:12px}.player-info span{color:#bfb8b6}
@@ -296,7 +296,7 @@ html{background:#050505}body{background:radial-gradient(ellipse 45% 24% at 52% -
  </section>
 <section class="screen" id="library"><div class="screen-head"><button class="back" data-back aria-label="Назад">‹</button><h1>Локальные файлы</h1></div><div class="card"><h2>Открой песню с устройства</h2><p class="subtitle">MP3, WAV, M4A и другие форматы, которые поддерживает браузер.</p><button class="btn primary" id="chooseAudio">📁 Выбрать аудиофайл</button></div><div class="notice">Загружай собственные композиции. Приложение строит предварительную сетку аккордов по аудио или позволяет ввести её вручную. Плеер и вкладка «Табы» работают с локальным файлом.</div></section>
 <section class="screen track-screen" id="track"><div class="screen-head"><button class="back" data-open="library" aria-label="Назад">‹</button><div class="track-head" style="flex:1"><h1 id="trackTitle">Название трека</h1><p id="trackArtist">Локальный файл</p></div><button class="icon-btn" id="favoriteBtn" aria-label="В избранное">♡</button><button class="icon-btn" id="trackSettings" aria-label="Настройки">⋮</button></div>
- <div class="song-summary"><div class="song-art">♫</div><div class="song-summary-meta"><b id="songTitle">Название песни</b><span id="songArtist">Локальный файл</span><small id="songOnlineStatus">◎ Аккорды, текст и табулатура</small></div><button id="songInfo" class="song-info-btn" aria-label="Информация о песне">ⓘ</button></div>
+ <div class="song-summary"><div class="song-art">♫</div><div class="song-summary-meta"><b id="songTitle">Название песни</b><span id="songArtist">Локальный файл</span><small id="songOnlineStatus">◎ Аккорды, текст и табулатура</small></div><button id="songFolder" class="song-folder-btn" type="button" title="Открыть аудиофайл из папки" aria-label="Выбрать другой аудиофайл из папки"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v2"/><path d="M3 10h18l-2.1 9H5.2L3 10Z"/></svg></button></div>
  <canvas class="wave" id="wave" width="800" height="170" aria-label="Звуковая волна, коснись для перемотки"></canvas><div class="track-time"><span id="timeTop">0:00</span><span id="timeTotal">0:00</span></div>
  <div class="tabs" id="trackTabs"><button data-tab="chords" class="active">Аккорды</button><button data-tab="lyrics">Текст</button><button data-tab="tabs">Табы</button><button data-tab="key">Тональность</button></div>
  <div class="track-pane active" id="pane-chords"><div class="chord-toolbar"><span class="subtitle" id="analysisLabel">Открой трек или добавь аккорды</span><button class="btn small" id="analyzeBtn">✧ Анализировать</button><button class="btn small" id="addChordBtn">＋</button><button class="btn small" id="exportBtn">↓ JSON</button></div><div id="analysisProgress" class="sr-only" role="status" aria-live="polite"></div><div id="chordList" aria-live="off" aria-label="Горизонтальная лента аккордов песни"></div></div>
@@ -643,7 +643,7 @@ async function decodeWave(file){try{const ctx=audioContext||(audioContext=new(wi
 function fft(re,im){let n=re.length;for(let i=1,j=0;i<n;i++){let bit=n>>1;for(;j&bit;bit>>=1)j^=bit;j^=bit;if(i<j){let a=re[i];re[i]=re[j];re[j]=a}}for(let len=2;len<=n;len<<=1){let a=-2*Math.PI/len,wr=Math.cos(a),wi=Math.sin(a);for(let start=0;start<n;start+=len){let r=1,v=0;for(let k=0;k<len/2;k++){let u=start+k,z=u+len/2,tr=r*re[z]-v*im[z],ti=r*im[z]+v*re[z];re[z]=re[u]-tr;im[z]=im[u]-ti;re[u]+=tr;im[u]+=ti;let nr=r*wr-v*wi;v=r*wi+v*wr;r=nr}}}}
 // More robust local harmony estimation: chroma with spectral whitening, bass evidence,
 // smoothed templates and Viterbi continuity. Not a neural transcription service.
-const ANALYZER_REV='harmonic-v4';
+const ANALYZER_REV='harmonic-v5.1';
 const CHORD_CLASSES=[];
 for(let root=0;root<12;root++)for(const [suffix,intervals,penalty] of [
  ['',[0,4,7],0],['m',[0,3,7],0],['7',[0,4,7,10],.105],
@@ -691,8 +691,8 @@ function smoothChordFrames(raw,energy){
  // Temporal average suppresses momentary melody notes and percussion hits.
  const emissions=[];for(let i=0;i<n;i++){
   const out=new Float32Array(len);let wsum=0;
-  for(let j=Math.max(0,i-3);j<=Math.min(n-1,i+3);j++){
-   const w=4-Math.abs(i-j);wsum+=w;
+  for(let j=Math.max(0,i-2);j<=Math.min(n-1,i+2);j++){
+   const w=3-Math.abs(i-j);wsum+=w;
    for(let c=0;c<len;c++)out[c]+=raw[j][c]*w;
   }
   for(let c=0;c<len;c++)out[c]/=wsum;
@@ -706,7 +706,7 @@ function smoothChordFrames(raw,energy){
    let best=-Infinity,bestP=0;
    for(let p=0;p<len;p++){
     // Do not strongly favor seventh/sus variants unless the audio supports the change.
-    const penalty=p===c?0:(CHORD_CLASSES[p].root===CHORD_CLASSES[c].root ? 0.075 : 0.155);
+    const penalty=p===c?0:(CHORD_CLASSES[p].root===CHORD_CLASSES[c].root ? 0.070 : 0.13);
     const cand=old[p]-penalty;
     if(cand>best){best=cand;bestP=p}
    }
@@ -739,15 +739,39 @@ function smoothChordFrames(raw,energy){
  }
  return {labels,certainty};
 }
+// Refine each estimated chord boundary using a nearby strong audio attack.
+// Returns the original spectral boundary when no convincing transient is present.
+function refineChordOnset(seconds,channels,sampleRate){
+ if(!Number.isFinite(seconds)||seconds<=0||!channels?.length)return Math.max(0,seconds||0);
+ const src=channels[0],start=Math.max(.08,seconds-.33),end=Math.min(src.length/sampleRate-.06,seconds+.33);
+ if(end<=start)return seconds;
+ const windowSamples=Math.max(160,Math.floor(sampleRate*.030));
+ function amplitude(center){
+  const offset=Math.max(0,Math.min(src.length-windowSamples,Math.round(center*sampleRate)));
+  let square=0,count=0;
+  for(let j=0;j<windowSamples;j+=5){const l=channels[0][offset+j]||0;const x=channels.length===1?l:.56*l+.44*(channels[1][offset+j]||0);square+=x*x;count++}
+  return Math.sqrt(square/Math.max(1,count));
+ }
+ let winner=seconds,best=.17;
+ for(let t=start;t<=end;t+=.020){
+  const before=amplitude(t-.042),after=amplitude(t+.012);
+  // Relative attack strength; reject very soft ticks/noise and far-away beats.
+  const peak=(after-before)/(after+before+.002);
+  const weight=peak-.20*Math.abs(t-seconds)/.33;
+  if(after>.016&&weight>best){best=weight;winner=t}
+ }
+ return Math.abs(winner-seconds)<=.33?winner:seconds;
+}
+let analysisQueued=false;
 async function analyzeTrack(){
- if(analysisInProgress)return;
+ if(analysisInProgress){analysisQueued=true;return}
  const stored=saved.edits?.[track.fileKey];
  if(stored?.method==='manual-v4'&&track.events.length&&!confirm('Повторный анализ заменит сохранённую ручную разметку этого трека. Продолжить?'))return;
  if(!decoded){toast('Сначала открой MP3 или WAV и дождись расшифровки спектра');return}
  analysisInProgress=true;
  const btn=$('analyzeBtn');btn.disabled=true;
  const input=decoded,fileKey=track.fileKey;
- const sr=input.sampleRate,n=16384,step=Math.max(1024,Math.floor(sr*.32));
+ const sr=input.sampleRate,n=16384,step=Math.max(1024,Math.floor(sr*.16));
  const channels=Array.from({length:Math.min(2,input.numberOfChannels)},(_,i)=>input.getChannelData(i));
  const length=channels[0].length,total=Math.max(0,Math.floor((length-n)/step)+1);
  const re=new Float32Array(n),im=new Float32Array(n),mag=new Float32Array(n/2),win=new Float32Array(n);
@@ -759,8 +783,8 @@ async function analyzeTrack(){
    if(fileKey!==track.fileKey||decoded!==input)return;
    const at=frame*step;let rms=0;
    for(let i=0;i<n;i++){
-    let sample=0;for(const chan of channels)sample+=chan[at+i]||0;
-    sample/=channels.length;rms+=sample*sample;
+    const sample=channels.length===1?(channels[0][at+i]||0):(.56*(channels[0][at+i]||0)+.44*(channels[1][at+i]||0));
+    rms+=sample*sample;
     re[i]=sample*win[i];im[i]=0;
    }
    fft(re,im);
@@ -777,8 +801,9 @@ async function analyzeTrack(){
   for(let i=0;i<result.labels.length;i++){
    const label=result.labels[i];if(i===0||label!==result.labels[i-1]){
     // The analysis is centered within the FFT window; onset time is an estimate.
-    const time=Math.max(0,i*step/sr+n/(2*sr)-.10);
-    events.push({time:+time.toFixed(2),chord:label,confidence:+result.certainty[i].toFixed(2),source:ANALYZER_REV});
+    const approx=Math.max(0,i*step/sr+n/(2*sr)-.10);
+    const corrected=i===0?0:Math.max(events[events.length-1]?.time+.08||0,refineChordOnset(approx,channels,sr));
+    events.push({time:+corrected.toFixed(2),chord:label,confidence:+result.certainty[i].toFixed(2),source:ANALYZER_REV});
     if(label==='?'||label==='—')uncertain++;
    }
   }
@@ -796,7 +821,7 @@ async function analyzeTrack(){
   renderChords();if(lyricsEntries.length)renderLyrics();highlightForTime(audio.currentTime||0);
   toast('Найдены приблизительные аккорды: '+events.length+' участков');
  }catch(err){$('analysisProgress').textContent='Ошибка анализа: '+err.message}
- finally{analysisInProgress=false;btn.disabled=false}
+ finally{analysisInProgress=false;btn.disabled=false;if(analysisQueued){analysisQueued=false;if(decoded&&track.fileKey&&track.events.length===0)setTimeout(()=>analyzeTrack(),0)}}
 }
 $('analyzeBtn').onclick=analyzeTrack;
 
@@ -1143,7 +1168,7 @@ function selectOnlineLyrics(entry){
 }
 $('findLyrics').onclick=()=>fetchLyricsFromInternet(false);
 $('useManualLyrics').onclick=()=>{lyricsSource='';track.lyrics=$('lyricsText').value;lyricsEntries=parseLyrics(track.lyrics);saveNote('lyrics',track.lyrics);renderLyrics();toast('Показан введённый текст')};
-$('songInfo').onclick=()=>switchTab('lyrics');
+$('songFolder').onclick=()=>$('audioInput').click();
 
 renderLists();renderStrings();renderWheel();renderSettings();drawWave();
 </script></div></body></html>
