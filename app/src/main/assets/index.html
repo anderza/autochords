@@ -235,6 +235,48 @@ html{background:#050505}body{background:radial-gradient(ellipse 45% 24% at 52% -
 .btn.primary:focus-visible,.tile:focus-visible{outline-color:#ffb36a}
 .toast{border-color:#ac6329!important;background:#392315!important}
 
+
+/* AutoChords v0.7: clean Guitar Pro-inspired six-string staff */
+.sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+.tab-score{min-height:232px;border:1px solid #4a4039;background:#101013}
+.tab-timeline-clip{padding:18px 12px 12px 30px;min-height:230px;scroll-behavior:auto}
+.tab-lane{min-height:199px}
+.tab-column{width:100px;flex-basis:100px;padding:0 5px;border-left:1px solid #544a42}
+.tab-column.measure-start{border-left:2px solid #d2aba0}
+.tab-column .tab-chord{height:36px;font-size:14px;color:#fda044;font-weight:800}
+.tab-column .tab-string{height:26px;font-size:16px;font-weight:650;color:#f6f3f3}
+.tab-column .tab-string:before{height:1px;background:#89848a}
+.tab-column .tab-string span{padding:0 4px;min-width:17px;background:#151317;z-index:1;font-variant-numeric:tabular-nums}
+.tab-column.active .tab-string span{color:#fff;background:#34211a;border-radius:3px;text-shadow:0 0 6px #ff8d3455}
+.tab-column.active .tab-chord{color:#ffae65}
+.tab-column .tab-time{height:24px;line-height:24px;color:#aaa29e;text-align:center;font-size:11px;font-variant-numeric:tabular-nums}
+.tab-cursor{top:31px;bottom:21px;width:2px;background:#ff8c27;box-shadow:0 0 13px 2px #ff8300c0}
+.tab-string-labels{top:54px;height:156px;width:29px;background:#171519;border-right:1px solid #65554a}
+.tab-string-labels span{height:26px;font-size:14px;font-weight:700;color:#eee9e9}
+@media(max-width:355px){.tab-column{width:89px;flex-basis:89px}}
+
+/* Compact tuner: mic toggle and all strings visible on phone without scrolling */
+#tuner .tuner-center{display:flex;flex-direction:column;padding:11px 12px 13px;margin-top:9px;border-radius:12px}
+#tuner .dial{height:156px;width:156px;margin:0 auto 4px;border-width:7px}
+#tuner .dial:before{inset:6px}
+#tuner .dial-note{font-size:54px}
+#tuner .dial-freq{font-size:13px}
+#tuner .tuner-verdict{margin-top:3px;font-size:14px}
+#tuner .centscale{height:39px;min-height:39px;margin:0}
+#tuner .centscale .line{height:26px}
+#tuner .centscale .line:after{height:28px}
+#tuner .centscale .indicator{height:30px;top:-2px}
+#tuner .tuner-reading{min-height:21px;margin:0 0 4px}
+#tuner .tuner-actions{order:1;gap:6px;margin:4px 0 7px}
+#tuner .tuner-actions button{min-height:44px;padding:6px;font-size:12px;display:flex;flex-direction:row;gap:7px}
+#tuner .subtitle{order:2;margin:5px 0!important;font-size:12px}
+#tuner .strings{order:3;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;margin:4px 0 8px;max-width:none}
+#tuner .strings button{aspect-ratio:auto;border-radius:7px;min-height:49px;padding:4px 1px;display:flex;flex-direction:column;gap:2px}
+#tuner .strings button strong{font-size:17px}
+#tuner .strings button small{font-size:9px;white-space:nowrap}
+#tuner .field{order:4;margin:2px 0}
+#tuner .a4-choices button{padding:7px 2px}
+#tuner #micHelp{font-size:11px;line-height:1.35}
 </style></head>
 <body><div class="app" id="app">
 <header class="topbar"><div class="brand" id="brand"><svg viewBox="0 0 44 44" aria-hidden="true" fill="none" stroke-linecap="round" stroke-width="3.6"><path d="M3 20v4" stroke="#4cc9ff"/><path d="M9 14v16" stroke="#75adff"/><path d="M15 6v32" stroke="#a96bff"/><path d="M21 16v12" stroke="#d68bff"/><path d="M27 10v24" stroke="#8e66ff"/><path d="M33 17v10" stroke="#5ac4ff"/><path d="M40 20v4" stroke="#6d9cff"/></svg><span>AutoChords</span></div><div class="topactions"><button class="pro" id="proBtn" title="О версии приложения">♫ Studio</button><button class="tiny-action" id="settingsBtn" aria-label="Настройки инструмента">⚙</button></div></header>
@@ -255,7 +297,7 @@ html{background:#050505}body{background:radial-gradient(ellipse 45% 24% at 52% -
  <div class="song-summary"><div class="song-art">♫</div><div class="song-summary-meta"><b id="songTitle">Название песни</b><span id="songArtist">Локальный файл</span><small id="songOnlineStatus">◎ Аккорды, текст и табулатура</small></div><button id="songInfo" class="song-info-btn" aria-label="Информация о песне">ⓘ</button></div>
  <canvas class="wave" id="wave" width="800" height="170" aria-label="Звуковая волна, коснись для перемотки"></canvas><div class="track-time"><span id="timeTop">0:00</span><span id="timeTotal">0:00</span></div>
  <div class="tabs" id="trackTabs"><button data-tab="chords" class="active">Аккорды</button><button data-tab="lyrics">Текст</button><button data-tab="tabs">Табы</button><button data-tab="key">Тональность</button></div>
- <div class="track-pane active" id="pane-chords"><div class="chord-toolbar"><span class="subtitle" id="analysisLabel">Открой трек или добавь аккорды</span><button class="btn small" id="analyzeBtn">✧ Анализировать</button><button class="btn small" id="addChordBtn">＋</button><button class="btn small" id="exportBtn">↓ JSON</button></div><div id="analysisProgress" class="small-note"></div><div id="chordList" aria-live="off" aria-label="Горизонтальная лента аккордов песни"></div></div>
+ <div class="track-pane active" id="pane-chords"><div class="chord-toolbar"><span class="subtitle" id="analysisLabel">Открой трек или добавь аккорды</span><button class="btn small" id="analyzeBtn">✧ Анализировать</button><button class="btn small" id="addChordBtn">＋</button><button class="btn small" id="exportBtn">↓ JSON</button></div><div id="analysisProgress" class="sr-only" role="status" aria-live="polite"></div><div id="chordList" aria-live="off" aria-label="Горизонтальная лента аккордов песни"></div></div>
  <div class="track-pane" id="pane-lyrics">
   <div class="lyrics-find"><div class="lyrics-source-head"><strong>Текст и аккорды</strong><span id="lyricsSourceBadge">○ Нет текста</span></div>
   <div class="lyric-search-row"><label>Исполнитель<input id="lyricArtist" class="input" placeholder="Исполнитель" autocomplete="off" /></label><label>Название<input id="lyricTitle" class="input" placeholder="Название песни" autocomplete="off" /></label></div>
@@ -266,16 +308,16 @@ html{background:#050505}body{background:radial-gradient(ellipse 45% 24% at 52% -
   <details class="lyrics-manual"><summary>Мой текст / редактор</summary><textarea class="input lyrics-box" id="lyricsText" placeholder="Вставь текст собственной песни или LRC с отметками времени..." aria-label="Мой текст песни"></textarea><button class="btn small" id="useManualLyrics">Показать мой текст</button></details>
 </div>
  <div class="track-pane" id="pane-tabs">
-  <div class="tab-intro"><div><strong>Табы · Гитара</strong><span>Линейная табулатура · 6 струн</span></div><button class="btn small" id="tabEditCurrent">✎ Править</button></div>
+  <div class="tab-intro"><div><strong>Табы · Гитара</strong><span>Гитарные лады · e B G D A E</span></div><button class="btn small" id="tabEditCurrent">✎ Править</button></div>
   <div class="tab-tools"><button id="tabSound" class="tab-tool-btn" aria-pressed="false">♬ Звук табов: выкл.</button><button id="tabCenter" class="tab-tool-btn">◎ К текущему</button><span id="tabPageInfo">0:00</span></div>
-  <p class="small-note tab-disclaimer">Табы создаются из гитарных аппликатур распознанных аккордов и следуют за музыкой. Это не точная транскрипция партий из аудиофайла.</p>
+  <p class="sr-only">Табулатура формируется из аппликатур аккордов, не является точной транскрипцией сольной партии.</p>
   <div id="tabScore" class="tab-score" aria-live="off"></div>
   <details class="tab-personal"><summary>Мои табы и заметки</summary><textarea class="input lyrics-box" id="tabsText" placeholder="Вставь или запиши свою табулатуру, она сохранится для этой композиции..." aria-label="Твои табы и заметки"></textarea></details>
 </div>
  <div class="track-pane" id="pane-key"><div class="card"><h2>Тональность композиции</h2><div class="field"><label for="trackKey">Выбрать вручную</label><select id="trackKey"><option value="auto">Авто (не определена)</option></select></div><p class="small-note">Транспонирование меняет отображаемые названия аккордов, но не высоту самого аудиофайла.</p><button class="btn" id="goSettings">Настройки инструмента ›</button></div></div>
  </section>
  <section class="screen" id="settings"><div class="screen-head"><button class="back" data-back>‹</button><h1>Инструмент</h1></div><div class="setting-card"><div class="instrument-grid" id="instrumentGrid"><button data-inst="guitar" class="chosen"><b>♬</b>Гитара</button><button data-inst="bass"><b>♩</b>Бас</button><button data-inst="ukulele"><b>♫</b>Укулеле</button><button data-inst="piano"><b>▥</b>Пианино</button></div><div class="field"><label for="instTuning">Строй</label><select id="instTuning"><option value="standard">Стандарт (E A D G B E)</option><option value="dropd">Drop D (D A D G B E)</option><option value="half">На полтона ниже (Eb Ab Db Gb Bb Eb)</option></select></div><div class="field"><label for="instKey">Тональность</label><select id="instKey"><option value="auto">Авто / исходная</option></select></div><div class="setline"><div><strong>Транспонировать</strong><small>Изменить подписи аккордов</small></div><div class="stepper"><button id="transMinus">−</button><span id="transValue">0</span><button id="transPlus">+</button></div></div><div class="setline"><div><strong>Скорость</strong><small>Скорость плеера</small></div><div class="stepper"><button id="speedMinus">−</button><span id="speedValue">1.00×</span><button id="speedPlus">+</button></div></div><div class="setline"><div><strong>Луп (повтор)</strong><small>Повторять композицию</small></div><input id="loopToggle" type="checkbox" class="switch"></div></div><p class="small-note">Настройки применяются к открытому треку. Для баса и укулеле схема аппликатур редактируется вручную.</p></section>
- <section class="screen tuner-screen" id="tuner"><div class="screen-head"><button class="back" data-back>‹</button><h1>Тюнер</h1><div class="segmented" style="max-width:155px"><button id="tunerAuto" class="active">Авто</button><button id="tunerManual">Ручной</button></div></div><div class="field" style="margin:5px 0"><label for="tunerTuning">Строй</label><select id="tunerTuning" class="input"><option value="standard">Стандарт (E A D G B E)</option><option value="dropd">Drop D</option><option value="half">На полтона ниже</option></select></div><div class="tuner-center"><div class="dial"><div class="dial-info"><div class="dial-note" id="tunerNote">—</div><div class="dial-freq" id="tunerFreq">— Hz</div></div></div><div class="tuner-verdict" id="tunerVerdict">Ожидание сигнала</div><div class="centscale"><span>♭</span><div class="line"><span class="indicator" id="pitchIndicator"></span></div><span>♯</span></div><p class="tuner-reading" id="tunerReading">Выбери струну или включи микрофон</p><div class="subtitle" style="margin:8px 0">Струна (выбранный строй)</div><div class="strings" id="strings"></div><div class="tuner-actions"><button class="btn primary" id="micBtn">🎤<span>Микрофон</span></button><button class="btn" id="toneBtn">♫<span>Опорный тон</span></button></div><div class="field"><label for="a4">Опорная частота A4</label><select id="a4" style="display:none" aria-label="Опорная частота A4"><option value="440">440 Hz</option><option value="432">432 Hz</option><option value="442">442 Hz</option><option value="443">443 Hz</option></select><div class="a4-choices" id="a4Choices"><button data-hz="432">432 Hz</button><button class="active" data-hz="440">440 Hz</button><button data-hz="442">442 Hz</button><button data-hz="443">443 Hz</button></div></div></div><p class="small-note" id="micHelp">Микрофон работает через HTTPS/localhost и при разрешении браузера. В обычном локальном файле доступ может быть ограничен.</p></section>
+ <section class="screen tuner-screen" id="tuner"><div class="screen-head"><button class="back" data-back>‹</button><h1>Тюнер</h1><div class="segmented" style="max-width:155px"><button id="tunerAuto" class="active">Авто</button><button id="tunerManual">Ручной</button></div></div><div class="field" style="margin:5px 0"><label for="tunerTuning">Строй</label><select id="tunerTuning" class="input"><option value="standard">Стандарт (E A D G B E)</option><option value="dropd">Drop D</option><option value="half">На полтона ниже</option></select></div><div class="tuner-center"><div class="dial"><div class="dial-info"><div class="dial-note" id="tunerNote">—</div><div class="dial-freq" id="tunerFreq">— Hz</div></div></div><div class="tuner-verdict" id="tunerVerdict">Ожидание сигнала</div><div class="centscale"><span>♭</span><div class="line"><span class="indicator" id="pitchIndicator"></span></div><span>♯</span></div><p class="tuner-reading" id="tunerReading">Выбери струну или включи микрофон</p><div class="subtitle" style="margin:8px 0">Струна (выбранный строй)</div><div class="strings" id="strings"></div><div class="tuner-actions"><button class="btn primary" id="micBtn">🎤<span>Микрофон</span></button><button class="btn" id="toneBtn">♫<span>Опорный тон</span></button></div><div class="field"><label for="a4">Опорная частота A4</label><select id="a4" style="display:none" aria-label="Опорная частота A4"><option value="440">440 Hz</option><option value="432">432 Hz</option><option value="442">442 Hz</option><option value="443">443 Hz</option></select><div class="a4-choices" id="a4Choices"><button data-hz="432">432 Hz</button><button class="active" data-hz="440">440 Hz</button><button data-hz="442">442 Hz</button><button data-hz="443">443 Hz</button></div></div></div><p class="small-note" id="micHelp">Нажми «Микрофон» и разреши доступ. Для точной настройки играй одну струну без других звуков.</p></section>
  <section class="screen" id="wheel"><div class="screen-head"><button class="back" data-back>‹</button><h1>Круг аккордов</h1></div><div class="segmented" id="keyModes"><button class="active" data-mode="major">Мажор</button><button data-mode="minor">Минор</button></div><div class="wheel-options"><span class="subtitle">Названия нот</span><div class="segmented wheel-note-toggle" id="wheelNotes"><button data-names="latin" class="active">C D E</button><button data-names="solfege">До Ре Ми</button></div></div><div class="wheel-wrap"><svg id="circleSvg" viewBox="0 0 340 340" role="img" aria-label="Интерактивный круг тональностей"></svg></div><div class="wheel-legend"><span><i class="tonic"></i>Тоника</span><span><i class="sub"></i>Субдоминанта</span><span><i class="dom"></i>Доминанта</span><span><i class="other"></i>Другие</span></div><p class="subtitle" id="keyInfo" style="text-align:center;margin:12px 0">E мажор · 4 диеза</p><div class="card"><h2>Аккорды тональности</h2><div class="degree-grid" id="degreeGrid"></div></div><div class="section-title"><h2>Последовательности</h2></div><div id="progressions"></div><p class="small-note">Внешнее кольцо — мажор, среднее — параллельный минор, внутреннее — уменьшённые аккорды (нажатие только воспроизводит звук). Звук синтезированный; используются трезвучия и натуральный минор.</p></section>
  <section class="screen" id="history"><div class="screen-head"><button class="back" data-back>‹</button><h1>История</h1></div><div class="history-list" id="historyList"></div><button class="btn primary" data-open="library">Открыть аудио</button></section>
  <section class="screen" id="favorites"><div class="screen-head"><button class="back" data-back>‹</button><h1>Избранное</h1></div><div id="favoritesList"></div></section>
@@ -290,7 +332,7 @@ html{background:#050505}body{background:radial-gradient(ellipse 45% 24% at 52% -
 <div class="toast" id="toast" role="status"></div>
 <script>
 'use strict';const $=id=>document.getElementById(id),$$=s=>Array.from(document.querySelectorAll(s));const NOTES=['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'];const WHEEL=['C','G','D','A','E','B','F#','Db','Ab','Eb','Bb','F'];const storeKey='auto-chords-neon-v1';let lyricsEntries=[],lyricLastIndex=-1,lyricsSource='',lyricsFetchToken=0;const LRCLIB_API='https://lrclib.net/api/search';let saved={};try{saved=JSON.parse(localStorage.getItem(storeKey)||'{}')}catch{};let history=Array.isArray(saved.history)?saved.history.filter(h=>h.name!=='Chris Rea — And You My Love'):[],favorites=Array.isArray(saved.favorites)?saved.favorites.filter(n=>n!=='Chris Rea — And You My Love'):[];let screen='home',previousScreen='home',activeTab='chords',track={name:'',artist:'',events:[],lyrics:'',tabs:'',duration:0,hasDemo:false},playingIndex=-1,lastScrollIndex=-1,chordPage=0,audioUrl='',audio=$('audio'),fileBuffer=null,decoded=null,waveData=null,settings={instrument:'guitar',tuning:'standard',key:'auto',transpose:0,speed:1,loop:false},wheelState={major:true,index:4},editIndex=-1,editMode='guitar',fingerPositions=[-1,-1,-1,-1,-1,-1],micStream=null,micSource=null,micAnalyser=null,micCtx=null,micRaf=0,tunerAuto=true,tunerIndex=0,tuningMidi=[40,45,50,55,59,64],audioContext=null,analysisInProgress=false,tabPage=0,editBaseFret=1;
-function persist(){try{localStorage.setItem(storeKey,JSON.stringify({history:history.slice(0,15),favorites,notes:saved.notes||{},edits:saved.edits||{}}))}catch{}}function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}function fmt(s){s=Number.isFinite(s)?Math.max(0,s):0;return Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0')}function toast(s){const e=$('toast');e.textContent=s;e.classList.add('on');clearTimeout(toast._t);toast._t=setTimeout(()=>e.classList.remove('on'),3300)}function navigate(to){if(!$(to))return;if(to!=='settings')previousScreen=screen;screen=to;$$('.screen').forEach(s=>s.classList.toggle('active',s.id===to));$('player').classList.toggle('hidden',to!=='track');$$('.nav button').forEach(b=>b.classList.toggle('on',b.dataset.open===(to==='track'?'library':to)));if(to==='tuner')renderStrings();if(to==='wheel')renderWheel();if(to==='home'||to==='history'||to==='favorites')renderLists();if(to==='settings')renderSettings();if(to==='track'){renderChords();drawWave()}$('app').scrollTop=0;window.scrollTo({top:0,behavior:'instant'})}$$('[data-open]').forEach(b=>b.addEventListener('click',()=>navigate(b.dataset.open)));$$('[data-back]').forEach(b=>b.addEventListener('click',()=>navigate(screen==='track'?'library':screen==='settings'?previousScreen:'home')));$('settingsBtn').onclick=()=>navigate('settings');$('proBtn').onclick=()=>toast('Auto Chords Studio — интерактивный прототип, без платных функций');
+function persist(){try{localStorage.setItem(storeKey,JSON.stringify({history:history.slice(0,15),favorites,notes:saved.notes||{},edits:saved.edits||{}}))}catch{}}function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}function fmt(s){s=Number.isFinite(s)?Math.max(0,s):0;return Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0')}function toast(s){const e=$('toast');e.textContent=s;e.classList.add('on');clearTimeout(toast._t);toast._t=setTimeout(()=>e.classList.remove('on'),3300)}function navigate(to){if(!$(to))return;if(screen==='tuner'&&to!=='tuner'&&micStream)stopMic();if(to!=='settings')previousScreen=screen;screen=to;$$('.screen').forEach(s=>s.classList.toggle('active',s.id===to));$('player').classList.toggle('hidden',to!=='track');$$('.nav button').forEach(b=>b.classList.toggle('on',b.dataset.open===(to==='track'?'library':to)));if(to==='tuner')renderStrings();if(to==='wheel')renderWheel();if(to==='home'||to==='history'||to==='favorites')renderLists();if(to==='settings')renderSettings();if(to==='track'){renderChords();drawWave()}$('app').scrollTop=0;window.scrollTo({top:0,behavior:'instant'})}$$('[data-open]').forEach(b=>b.addEventListener('click',()=>navigate(b.dataset.open)));$$('[data-back]').forEach(b=>b.addEventListener('click',()=>navigate(screen==='track'?'library':screen==='settings'?previousScreen:'home')));$('settingsBtn').onclick=()=>navigate('settings');$('proBtn').onclick=()=>toast('Auto Chords Studio — интерактивный прототип, без платных функций');
 function recentButton(title,subtitle,icon='♫',click=()=>{}){const b=document.createElement('button');b.className='recent-item';b.innerHTML=`<span class="cover">${icon}</span><span class="item-info"><span class="item-title">${esc(title)}</span><span class="item-meta">${esc(subtitle)}</span></span><span class="more">⋮</span>`;b.onclick=click;return b}
 function renderLists(){
  const div=$('homeRecent');div.replaceChildren();
@@ -390,17 +432,22 @@ function updateTabHighlight(){
 }
 function renderTabScore(){
  const host=$('tabScore');if(!host)return;host.replaceChildren();tabLastIndex=-2;tabPlayingIndex=-1;
- if(!track.events.length){host.innerHTML='<div class="placeholder">Открой аудиофайл, запусти анализ или создай аккорды вручную. Здесь появится горизонтальная шестиструнная табулатура.</div>';$('tabPageInfo').textContent='Нет аккордов';return;}
- const clip=document.createElement('div');clip.className='tab-timeline-clip';clip.id='tabTimelineClip';const lane=document.createElement('div');lane.className='tab-lane';lane.id='tabLane';
- track.events.forEach((ev,i)=>{const col=document.createElement('button');col.className='tab-column';col.dataset.tabEvent=i;col.setAttribute('aria-label',ev.chord+' с '+fmt(ev.time)+', нажми для перемотки, дважды для редактирования');col.type='button';
+ if(!track.events.length){host.innerHTML='<div class="placeholder">Открой аудиофайл, запусти анализ или добавь аккорд. Здесь будут шесть струн с цифрами ладов.</div>';$('tabPageInfo').textContent='Нет аккордов';return;}
+ const clip=document.createElement('div');clip.className='tab-timeline-clip';clip.id='tabTimelineClip';clip.setAttribute('aria-label','Горизонтальная табулатура: e B G D A E');
+ const lane=document.createElement('div');lane.className='tab-lane';lane.id='tabLane';
+ track.events.forEach((ev,i)=>{
+  const col=document.createElement('button');col.className='tab-column';if(i%4===0)col.classList.add('measure-start');col.dataset.tabEvent=i;col.type='button';
+  col.setAttribute('aria-label',ev.chord+', '+fmt(ev.time)+', 6 струн; нажатие — перемотка, двойное нажатие — редактор');
   const title=document.createElement('span');title.className='tab-chord';title.textContent=transposeChord(ev.chord,settings.transpose);col.append(title);
   const shape=effectiveShape(ev);
-  for(let string=5;string>=0;string--){const line=document.createElement('span');line.className='tab-string';const n=document.createElement('span');n.textContent=!shape?'–':shape[string]<0?'×':String(shape[string]);line.append(n);col.append(line)}
-  const stamp=document.createElement('span');stamp.className='tab-time';stamp.textContent=fmt(ev.time);col.append(stamp);
-  col.onclick=()=>seekEvent(i);col.ondblclick=()=>openChordEditor(i);lane.append(col)
+  for(let str=5;str>=0;str--){const line=document.createElement('span');line.className='tab-string';const n=document.createElement('span');n.className='tab-fret';
+   const fret=shape?.[str];n.textContent=!Number.isInteger(fret)?'–':fret<0?'×':String(fret);line.append(n);col.append(line)}
+  const stamp=document.createElement('span');stamp.className='tab-time';stamp.textContent=(i%4===0?'│ ':'')+fmt(ev.time);col.append(stamp);
+  col.onclick=()=>seekEvent(i);col.ondblclick=()=>openChordEditor(i);lane.append(col);
  });
- const cursor=document.createElement('div');cursor.className='tab-cursor';lane.append(cursor);clip.append(lane);const labels=document.createElement('div');labels.className='tab-string-labels';['e','B','G','D','A','E'].forEach(n=>{const span=document.createElement('span');span.textContent=n;labels.append(span)});host.append(clip,labels);
- requestAnimationFrame(updateTabHighlight);
+ const cursor=document.createElement('div');cursor.className='tab-cursor';cursor.setAttribute('aria-hidden','true');lane.append(cursor);
+ clip.append(lane);const labels=document.createElement('div');labels.className='tab-string-labels';['e','B','G','D','A','E'].forEach(name=>{const span=document.createElement('span');span.textContent=name;labels.append(span)});
+ host.append(clip,labels);requestAnimationFrame(updateTabHighlight);
 }
 function animateTabCursor(t){
  const host=$('tabScore'),cursor=host.querySelector('.tab-cursor'),lane=host.querySelector('.tab-lane'),clip=host.querySelector('.tab-timeline-clip');
@@ -764,7 +811,89 @@ $$('#keyModes button').forEach(b=>b.onclick=()=>{wheelState.major=b.dataset.mode
 $$('#wheelNotes button').forEach(b=>b.onclick=()=>{wheelNames=b.dataset.names;renderWheel()});
 async function ensureContext(){audioContext ||= new (window.AudioContext||window.webkitAudioContext)();await audioContext.resume();return audioContext}function chordMidi(name){let m=/^([A-G])([#b]?)(m|°)?/.exec(name),root=m?noteIndex(m[1]+m[2]):0,quality=m?.[3]||'';if(root<0)root=({'E#':5,'B#':0,'Cb':11,'Fb':4})[(m?.[1]||'')+(m?.[2]||'')]??0;return [root+48,root+48+(quality==='m'||quality==='°'?3:4),root+48+(quality==='°'?6:7)]}async function playChord(name,startDelay=0,dt=1.2){let c=await ensureContext(),t=c.currentTime+startDelay;chordMidi(name).forEach((m,i)=>{let o=c.createOscillator(),g=c.createGain();o.type='triangle';o.frequency.value=440*2**((m-69)/12);g.gain.setValueAtTime(.00001,t);g.gain.linearRampToValueAtTime(.065,t+.06);g.gain.exponentialRampToValueAtTime(.00001,t+dt);o.connect(g).connect(c.destination);o.start(t);o.stop(t+dt+.01)})}async function playProgression(a){await ensureContext();for(let i=0;i<a.length;i++)playChord(a[i],i*1.05,.96)}
 function freqForMidi(m){return Number($('a4').value)*2**((m-69)/12)}function renderStrings(){const names=['E','A','D','G','B','E'];const tuned={standard:[40,45,50,55,59,64],dropd:[38,45,50,55,59,64],half:[39,44,49,54,58,63]};tuningMidi=tuned[$('tunerTuning').value]||tuned.standard;const st=$('strings');st.replaceChildren();[2,3,1,4,0,5].forEach(i=>{let m=tuningMidi[i],b=document.createElement('button');b.innerHTML='<strong>'+NOTES[m%12]+'</strong><small>'+(6-i)+' струна</small>';b.className=tunerIndex===i?'selected':'';b.onclick=()=>{tunerIndex=i;renderStrings();showTarget()};st.append(b)});if(!micStream)showTarget()}function showTarget(){let m=tuningMidi[tunerIndex];$('tunerReading').textContent='Цель: '+NOTES[m%12]+(Math.floor(m/12)-1)+' · '+freqForMidi(m).toFixed(2)+' Hz';$('tunerNote').textContent=NOTES[m%12];$('tunerFreq').textContent=freqForMidi(m).toFixed(2)+' Hz';$('tunerVerdict').textContent='Настрой выбранную струну';$('tunerVerdict').classList.remove('good');$('pitchIndicator').style.left='50%'}$('tunerTuning').onchange=renderStrings;$('a4').onchange=showTarget;$$('#a4Choices button').forEach(b=>b.onclick=()=>{$('a4').value=b.dataset.hz;$$('#a4Choices button').forEach(c=>c.classList.toggle('active',c===b));showTarget()});$('tunerAuto').onclick=()=>{tunerAuto=true;$('tunerAuto').classList.add('active');$('tunerManual').classList.remove('active')};$('tunerManual').onclick=()=>{tunerAuto=false;$('tunerManual').classList.add('active');$('tunerAuto').classList.remove('active')};$('toneBtn').onclick=async()=>{let c=await ensureContext(),o=c.createOscillator(),g=c.createGain(),t=c.currentTime;o.type='sine';o.frequency.value=freqForMidi(tuningMidi[tunerIndex]);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.14,t+.04);g.gain.exponentialRampToValueAtTime(.0001,t+1.5);o.connect(g).connect(c.destination);o.start(t);o.stop(t+1.51)};
-function detectPitch(buf,sr){let rms=0;for(let x of buf)rms+=x*x;rms=Math.sqrt(rms/buf.length);if(rms<.012)return 0;let lo=Math.floor(sr/420),hi=Math.min(Math.ceil(sr/68),buf.length/2),best=0,bestLag=0;for(let lag=lo;lag<=hi;lag++){let sum=0,s1=0,s2=0;for(let i=0;i<buf.length-lag;i+=3){let a=buf[i],b=buf[i+lag];sum+=a*b;s1+=a*a;s2+=b*b}let r=sum/Math.sqrt(s1*s2+1e-15);if(r>best){best=r;bestLag=lag}}return best>.81?sr/bestLag:0}async function stopMic(){if(micStream){micStream.getTracks().forEach(t=>t.stop());micStream=null}cancelAnimationFrame(micRaf);$('micBtn').innerHTML='🎤<span>Микрофон</span>';$('micHelp').textContent='Микрофон выключен';showTarget()}$('micBtn').onclick=async()=>{if(micStream){stopMic();return}try{micStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});micCtx=await ensureContext();micSource=micCtx.createMediaStreamSource(micStream);micAnalyser=micCtx.createAnalyser();micAnalyser.fftSize=4096;micSource.connect(micAnalyser);$('micBtn').innerHTML='■<span>Выключить</span>';$('micHelp').textContent='Слушаю… играй одну струну';const buf=new Float32Array(4096);function loop(){if(!micStream)return;micAnalyser.getFloatTimeDomainData(buf);let f=detectPitch(buf,micCtx.sampleRate);if(f){let midi=69+12*Math.log2(f/Number($('a4').value));let target=tuningMidi[tunerIndex];if(tunerAuto){let j=0,dist=Infinity;tuningMidi.forEach((m,k)=>{let d=Math.abs(m-midi);if(d<dist){j=k;dist=d}});if(dist<1.9&&j!==tunerIndex){tunerIndex=j;renderStrings()}target=tuningMidi[tunerIndex]}let cents=Math.round((midi-target)*100);$('tunerNote').textContent=NOTES[((Math.round(midi)%12)+12)%12];$('tunerFreq').textContent=f.toFixed(2)+' Hz';$('pitchIndicator').style.left=Math.max(1,Math.min(99,50+cents*.5))+'%';let good=Math.abs(cents)<6;$('tunerVerdict').textContent=good?'✓ Точно!':cents>0?'Выше нужной частоты':'Ниже нужной частоты';$('tunerVerdict').classList.toggle('good',good);$('tunerReading').textContent=(cents>0?'+':'')+cents+' центов · цель '+freqForMidi(target).toFixed(1)+' Hz'}micRaf=requestAnimationFrame(loop)}loop()}catch(err){await stopMic();$('micHelp').textContent='Нет доступа к микрофону. Для браузера нужен HTTPS или localhost и разрешение. '+err.message}};
+// YIN normalized difference estimator; intentionally restricted to six-string guitar range.
+function detectPitch(buf,sr){
+ const n=buf?.length||0;if(n<2048||!sr)return 0;
+ let sum=0,sumsq=0;for(let i=0;i<n;i++){sum+=buf[i];sumsq+=buf[i]*buf[i]}
+ const mean=sum/n,rms=Math.sqrt(Math.max(0,sumsq/n-mean*mean));if(rms<0.005)return 0;
+ const lowLag=Math.floor(sr/425),highLag=Math.min(Math.floor(sr/65),Math.floor(n/2)-2);
+ if(highLag<=lowLag)return 0;
+ const diff=new Float64Array(highLag+2),norm=new Float64Array(highLag+2);let running=0;
+ const window=Math.min(4096,n-highLag);
+ for(let lag=1;lag<=highLag;lag++){
+  let d=0;for(let i=0;i<window;i+=4){const v=buf[i]-buf[i+lag];d+=v*v}diff[lag]=d;
+  running+=d;norm[lag]=running>0?d*lag/running:1;
+ }
+ let chosen=-1,minimum=1;
+ for(let lag=lowLag;lag<=highLag-1;lag++){
+  const v=norm[lag];if(v<minimum){minimum=v;chosen=lag}
+  if(v<0.16){while(lag<highLag-1&&norm[lag+1]<norm[lag])lag++;chosen=lag;minimum=norm[lag];break}
+ }
+ if(chosen<0||minimum>0.32)return 0;
+ const a=norm[chosen-1]??norm[chosen],b=norm[chosen],c=norm[chosen+1]??norm[chosen];
+ const denom=a-2*b+c;const correction=Math.abs(denom)>1e-9?Math.max(-0.5,Math.min(0.5,(a-c)/(2*denom))):0;
+ const hz=sr/(chosen+correction);return hz>=64&&hz<=435?hz:0;
+}
+let tunerSession=0,tunerHistory=[],lastPitchFrame=0,tunerSilentAt=0;
+async function stopMic(){
+ tunerSession++;cancelAnimationFrame(micRaf);micRaf=0;
+ const stream=micStream,ctx=micCtx;micStream=null;micCtx=null;micSource=null;micAnalyser=null;tunerHistory=[];
+ if(stream)stream.getTracks().forEach(t=>t.stop());
+ if(ctx&&ctx.state!=='closed')try{await ctx.close()}catch{}
+ $('micBtn').innerHTML='🎤<span>Микрофон</span>';
+ $('micBtn').setAttribute('aria-pressed','false');$('micHelp').textContent='Микрофон выключен';showTarget();
+}
+$('micBtn').onclick=async()=>{
+ if(micStream){await stopMic();return}
+ if(!window.isSecureContext||!navigator.mediaDevices?.getUserMedia){
+  $('micHelp').textContent='Микрофон недоступен: открой приложение через HTTPS или разреши доступ на Android.';return;
+ }
+ const session=++tunerSession;
+ $('micBtn').disabled=true;$('micHelp').textContent='Запрашиваю разрешение на микрофон…';
+ try{
+  // Open and resume the capture AudioContext while the user click gesture is still active.
+  // On Android WebView resuming only after the asynchronous permission dialog may remain suspended.
+  micCtx=new(window.AudioContext||window.webkitAudioContext)();const ready=micCtx.resume();
+  const stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false},video:false});
+  if(session!==tunerSession){stream.getTracks().forEach(t=>t.stop());return}
+  micStream=stream;await ready;
+  micSource=micCtx.createMediaStreamSource(micStream);micAnalyser=micCtx.createAnalyser();micAnalyser.fftSize=8192;micAnalyser.smoothingTimeConstant=0;
+  micSource.connect(micAnalyser);const buf=new Float32Array(micAnalyser.fftSize);
+  tunerHistory=[];lastPitchFrame=0;tunerSilentAt=0;
+  $('micBtn').innerHTML='■<span>Выключить</span>';$('micBtn').setAttribute('aria-pressed','true');
+  $('micHelp').textContent='Микрофон включён · сыграй одну открытую струну';
+  const loop=(stamp)=>{
+   if(session!==tunerSession||!micStream||!micAnalyser)return;
+   micRaf=requestAnimationFrame(loop);
+   if(stamp-lastPitchFrame<85)return;lastPitchFrame=stamp;
+   micAnalyser.getFloatTimeDomainData(buf);const found=detectPitch(buf,micCtx.sampleRate);
+   if(!found){
+    if(!tunerSilentAt)tunerSilentAt=stamp;
+    if(stamp-tunerSilentAt>350){tunerHistory=[];$('tunerVerdict').textContent='Нет звука';$('tunerVerdict').classList.remove('good');$('tunerReading').textContent='Сыграй одну струну ближе к микрофону';$('tunerFreq').textContent='— Hz';}
+    return;
+   }
+   tunerSilentAt=0;tunerHistory.push(found);if(tunerHistory.length>5)tunerHistory.shift();
+   const values=[...tunerHistory].sort((a,b)=>a-b),f=values[Math.floor(values.length/2)];
+   const midi=69+12*Math.log2(f/Number($('a4').value));let target=tuningMidi[tunerIndex];
+   if(tunerAuto){let best=tunerIndex,dist=Infinity;tuningMidi.forEach((m,k)=>{const d=Math.abs(m-midi);if(d<dist){best=k;dist=d}});
+    if(dist<3&&best!==tunerIndex){tunerIndex=best;renderStrings()}target=tuningMidi[tunerIndex]}
+   const cents=Math.round((midi-target)*100),good=Math.abs(cents)<=6;
+   $('tunerNote').textContent=NOTES[((Math.round(midi)%12)+12)%12];
+   $('tunerFreq').textContent=f.toFixed(2)+' Hz';
+   $('pitchIndicator').style.left=Math.max(2,Math.min(98,50+cents*.42))+'%';
+   $('tunerVerdict').textContent=good?'✓ Точно!':cents>0?'Слишком высоко':'Слишком низко';
+   $('tunerVerdict').classList.toggle('good',good);
+   $('tunerReading').textContent=(cents>0?'+':'')+cents+' центов · цель '+freqForMidi(target).toFixed(1)+' Hz';
+   $('micHelp').textContent='Микрофон активен · '+f.toFixed(1)+' Hz';
+  };
+  micRaf=requestAnimationFrame(loop);
+  stream.getAudioTracks().forEach(t=>t.addEventListener('ended',()=>{if(session===tunerSession)stopMic()}));
+ }catch(err){
+  if(session===tunerSession){await stopMic();const detail=err?.name||'Ошибка';
+   $('micHelp').textContent='Микрофон не запущен ('+detail+'). Проверь разрешение: Настройки Android → Приложения → AutoChords → Микрофон.';
+  }
+ }finally{$('micBtn').disabled=false}
+};
 
 
 function setPlayIcon(playing){const b=$('playBtn');if(!b)return;b.setAttribute('aria-label',playing?'Пауза':'Воспроизвести');b.innerHTML=playing?'<svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1" fill="white"/><rect x="14" y="5" width="4" height="14" rx="1" fill="white"/></svg>':'<svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="M8 5 L19 12 L8 19 Z" fill="white"/></svg>'}
