@@ -9,6 +9,13 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.webkit.PermissionRequest;
+import android.webkit.JavascriptInterface;
+import org.json.JSONObject;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.io.InputStream;
+import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
@@ -35,6 +42,7 @@ public class MainActivity extends Activity {
 
         webView = new WebView(this);
         webView.setBackgroundColor(0xFF090D17);
+        webView.addJavascriptInterface(new LyricsBridge(), "AutoChordsNative");
         setContentView(webView);
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
@@ -132,6 +140,59 @@ public class MainActivity extends Activity {
     @Override public void onBackPressed() {
         if (webView != null && webView.canGoBack()) webView.goBack();
         else super.onBackPressed();
+    }
+
+    /** A fixed-origin LRCLIB fallback when browser CORS/network blocks search. */
+    private class LyricsBridge {
+        @JavascriptInterface public void searchLyrics(String query, int requestId) {
+            if (requestId < 1 || query == null || query.length() > 600
+                    || !query.matches("[A-Za-z0-9%&=+_.~*-]+")) {
+                sendLyricsReply(requestId, 400, "[]");
+                return;
+            }
+            new Thread(() -> {
+                HttpURLConnection connection = null;
+                int code = 503;
+                String result = "[]";
+                try {
+                    URL url = new URL("https://lrclib.net/api/search?" + query);
+                    connection = (HttpURLConnection) url.openConnection();
+                    connection.setRequestMethod("GET");
+                    connection.setConnectTimeout(10000);
+                    connection.setReadTimeout(12000);
+                    connection.setRequestProperty("Accept", "application/json");
+                    connection.setRequestProperty("User-Agent", "AutoChords/0.8 (Android; Lyrics Search)");
+                    code = connection.getResponseCode();
+                    try (InputStream input = code >= 200 && code < 300
+                            ? connection.getInputStream() : connection.getErrorStream()) {
+                        if (input != null) {
+                            ByteArrayOutputStream out = new ByteArrayOutputStream();
+                            byte[] buffer = new byte[8192];
+                            int count;
+                            while ((count = input.read(buffer)) > 0) {
+                                if (out.size() + count > 1500000) throw new Exception("Lyrics response too large");
+                                out.write(buffer, 0, count);
+                            }
+                            result = new String(out.toByteArray(), StandardCharsets.UTF_8);
+                        }
+                    }
+                } catch (Exception ignored) {
+                    code = 503;
+                } finally {
+                    if (connection != null) connection.disconnect();
+                }
+                sendLyricsReply(requestId, code, result);
+            }, "AutoChords-Lyrics").start();
+        }
+    }
+
+    private void sendLyricsReply(int requestId, int code, String response) {
+        final String safe = JSONObject.quote(response == null ? "[]" : response);
+        runOnUiThread(() -> {
+            if (webView != null) webView.evaluateJavascript(
+                    "window.__autoChordsLyricsReply && window.__autoChordsLyricsReply("
+                    + requestId + "," + code + "," + safe + ");", null);
+        });
     }
 
     @Override protected void onDestroy() {
