@@ -65,7 +65,13 @@ jobs:
           else
             gh release create "$TAG" --target "$GITHUB_SHA" --title "$TITLE" --notes "$NOTES" --prerelease --latest=false
           fi
-          gh release upload "$TAG" "${APK}#${ASSET}" --clobber
+          # GitHub's #suffix only sets an asset label, not its download filename.
+          cp "$APK" "$ASSET"
+          gh release upload "$TAG" "$ASSET" --clobber
+          # Remove the old generic filename from this versioned release.
+          if gh release view "$TAG" --json assets --jq '.assets[].name' | grep -Fxq 'app-debug.apk'; then
+            gh release delete-asset "$TAG" app-debug.apk --yes
+          fi
 
           # Keep the old preview URL working for installed/test versions.
           if gh release view preview >/dev/null 2>&1; then
