@@ -2,7 +2,25 @@ plugins {
     id 'com.android.application'
 }
 
+def signingPath = System.getenv('ANDROID_KEYSTORE_PATH')
+def buildNumber = Integer.parseInt(System.getenv('VERSION_CODE') ?: '14')
 android {
+    signingConfigs {
+        release {
+            if (signingPath) {
+                storeFile file(signingPath)
+                storePassword System.getenv('ANDROID_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('ANDROID_KEY_ALIAS')
+                keyPassword System.getenv('ANDROID_KEY_PASSWORD')
+            }
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            if (signingPath) signingConfig signingConfigs.release
+        }
+    }
     namespace 'com.anderza.autochords'
     compileSdk 35
 
@@ -10,8 +28,8 @@ android {
         applicationId 'com.anderza.autochords'
         minSdk 24
         targetSdk 34
-        versionCode 13
-        versionName '0.9.3'
+        versionCode = buildNumber
+        versionName '0.9.4'
     }
 
     compileOptions {
