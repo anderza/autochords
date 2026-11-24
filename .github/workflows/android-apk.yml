@@ -28,13 +28,11 @@ jobs:
         with:
           node-version: '22'
       - uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.9'
       - run: node tests/check-html.cjs && node --test tests/analyzer.test.cjs
       - name: Set version code
         run: echo "VERSION_CODE=$((1000 + GITHUB_RUN_NUMBER))" >> "$GITHUB_ENV"
       - name: Debug checks
-        run: gradle --no-daemon lintDebug testDebugUnitTest assembleDebug
+        run: ./gradlew --no-daemon lintDebug testDebugUnitTest assembleDebug
       - name: Release signing
         id: sign
         if: github.event_name != 'pull_request'
@@ -54,7 +52,7 @@ jobs:
           trap 'rm -f "$KEYSTORE_PATH"' EXIT
           printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE_PATH"
           unset KEYSTORE_BASE64
-          gradle --no-daemon lintRelease assembleRelease
+          ./gradlew --no-daemon lintRelease assembleRelease
           version="$(cat VERSION)"
           mkdir -p dist
           cp app/build/outputs/apk/release/app-release.apk "dist/AutoChords-v$version.apk"
