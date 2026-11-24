@@ -2,7 +2,24 @@ plugins {
     id 'com.android.application'
 }
 
+def signingEnv = ['KEYSTORE_PATH','KEYSTORE_PASSWORD','KEY_ALIAS','KEY_PASSWORD'].collectEntries { [(it): System.getenv(it)] }
+def canSign = signingEnv.values().every { it }
 android {
+    signingConfigs {
+        release {
+            if (canSign) {
+                storeFile file(signingEnv.KEYSTORE_PATH)
+                storePassword signingEnv.KEYSTORE_PASSWORD
+                keyAlias signingEnv.KEY_ALIAS
+                keyPassword signingEnv.KEY_PASSWORD
+            }
+        }
+    }
+    buildTypes {
+        release {
+            if (canSign) signingConfig signingConfigs.release
+        }
+    }
     namespace 'com.anderza.autochords'
     compileSdk 35
 
@@ -10,8 +27,8 @@ android {
         applicationId 'com.anderza.autochords'
         minSdk 24
         targetSdk 34
-        versionCode 13
-        versionName '0.9.3'
+        versionCode (System.getenv('VERSION_CODE') ?: '13').toInteger()
+        versionName rootProject.file('VERSION').text.trim()
     }
 
     compileOptions {
