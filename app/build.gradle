@@ -2,6 +2,26 @@ plugins {
     id 'com.android.application'
 }
 
+// appVersion in gradle.properties is the single versionName source and release-tag source.
+// CI run number grows monotonically; local builds use the checked-out Git commit count.
+def appVersionName = providers.gradleProperty('appVersion').get()
+def localCommitCount = providers.exec {
+    commandLine 'git', 'rev-list', '--count', 'HEAD'
+}.standardOutput.asText.map { it.trim().toInteger() }
+def appVersionCode = providers.environmentVariable('GITHUB_RUN_NUMBER')
+        .map { it.toInteger() }
+        .orElse(localCommitCount)
+        .get()
+
+// Never read signing secrets from checked-in files, Gradle properties or logs.
+def signingValues = [
+        path: System.getenv('KEYSTORE_PATH'),
+        storePass: System.getenv('KEYSTORE_PASSWORD'),
+        alias: System.getenv('KEY_ALIAS'),
+        keyPass: System.getenv('KEY_PASSWORD')
+]
+def canSignRelease = signingValues.values().every { it != null && !it.trim().isEmpty() }
+
 android {
     namespace 'com.anderza.autochords'
     compileSdk 35
@@ -10,8 +30,24 @@ android {
         applicationId 'com.anderza.autochords'
         minSdk 24
         targetSdk 34
-        versionCode 13
-        versionName '0.9.3'
+        versionCode appVersionCode
+        versionName appVersionName
+    }
+
+    signingConfigs {
+        release {
+            if (canSignRelease) {
+                storeFile file(signingValues.path)
+                storePassword signingValues.storePass
+                keyAlias signingValues.alias
+                keyPassword signingValues.keyPass
+            }
+        }
+    }
+    buildTypes {
+        release {
+            if (canSignRelease) signingConfig signingConfigs.release
+        }
     }
 
     compileOptions {
@@ -19,7 +55,6 @@ android {
         targetCompatibility JavaVersion.VERSION_17
     }
 }
-
 dependencies {
     implementation 'androidx.webkit:webkit:1.12.1'
 }
