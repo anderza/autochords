@@ -1,82 +1,141 @@
 name: Build AutoChords APK
-
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
-
+    inputs:
+      accept_legacy_migration:
+        description: 'Однократный переход со старой debug-подписи (потребуется переустановка)'
+        type: boolean
+        default: false
+concurrency:
+  group: autochords-release
+  cancel-in-progress: false
 permissions:
-  contents: write
-
+  contents: read
 jobs:
-  android:
-    name: Android debug APK
+  build:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Java 17
-        uses: actions/setup-java@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
-
-      - name: Gradle 8.9
-        uses: gradle/actions/setup-gradle@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-
-      - name: Build installable APK
-        run: gradle --no-daemon --stacktrace assembleDebug
-
-      - name: Store downloadable APK artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: AutoChords-debug-APK
-          path: app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
-          retention-days: 30
-
-      - name: Publish named versioned AutoChords release
-        if: github.ref == 'refs/heads/main'
+      - id: meta
         env:
           GH_TOKEN: ${{ github.token }}
-        shell: bash
         run: |
           set -euo pipefail
-          VERSION="$(sed -n "s/.*versionName ['\"]\([^'\"]*\)['\"].*/\1/p" app/build.gradle | head -n 1)"
-          if [[ -z "$VERSION" ]]; then
-            echo "Could not read Android versionName"
+          VERSION=$(sed -n "s/.*versionName '\([^']*\)'.*/\1/p" app/build.gradle)
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.-]+)?$ ]]
+          if git ls-remote --exit-code --tags origin "refs/tags/v$VERSION" >/dev/null; then
+            echo "::error::Тег уже существует — подними versionName"
             exit 1
           fi
-
-          TAG="v${VERSION}"
-          TITLE="AutoChords v${VERSION}"
-          APK="app/build/outputs/apk/debug/app-debug.apk"
-          ASSET="AutoChords-v${VERSION}.apk"
-          NOTES="AutoChords ${VERSION} — предварительная Android APK (debug).
-
-          Эта сборка использует отладочную подпись. Обновление поверх предыдущих APK может не работать, если ключ подписи отличается."
-
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release edit "$TAG" --title "$TITLE" --notes "$NOTES" --prerelease
-          else
-            gh release create "$TAG" --target "$GITHUB_SHA" --title "$TITLE" --notes "$NOTES" --prerelease --latest=false
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "VERSION_CODE=$((1000 + GITHUB_RUN_NUMBER))" >> "$GITHUB_ENV"
+      - name: Check HTML scripts
+        run: |
+          node <<'NODE'
+          const fs=require('fs'), cp=require('child_process');
+          const html=fs.readFileSync('app/src/main/assets/index.html','utf8');
+          const scripts=[...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)];
+          if(!html.trim() || !scripts.length) process.exit(1);
+          for(const [,s] of scripts) cp.execFileSync(process.execPath,['--check'],{input:s,stdio:['pipe','inherit','inherit']});
+          NODE
+      - name: Signed release and lint
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          for name in ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD; do
+            if [[ -z "${!name}" ]]; then
+              echo "::error::Добавьте все 4 секрета ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD в Settings → Secrets and variables → Actions"
+              exit 1
+            fi
+          done
+          export ANDROID_KEYSTORE_PATH=$(mktemp "$RUNNER_TEMP/autochords.XXXXXX")
+          trap 'rm -f "$ANDROID_KEYSTORE_PATH"' EXIT
+          chmod 600 "$ANDROID_KEYSTORE_PATH"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$ANDROID_KEYSTORE_PATH"
+          unset ANDROID_KEYSTORE_BASE64
+          gradle --no-daemon lintRelease assembleRelease
+      - name: Verify APK and previous certificate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MIGRATE: ${{ inputs.accept_legacy_migration }}
+        run: |
+          set -euo pipefail
+          TOOLS=$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -1)
+          APK=app/build/outputs/apk/release/app-release.apk
+          CERT=$("$TOOLS/apksigner" verify --print-certs "$APK" | tee /dev/stderr | sed -n 's/^Signer #1 certificate SHA-256 digest: //p')
+          [[ -n "$CERT" ]]
+          BADGING=$("$TOOLS/aapt" dump badging "$APK")
+          grep -F "versionName='$VERSION'" <<< "$BADGING"
+          grep -F "versionCode='$VERSION_CODE'" <<< "$BADGING"
+          PREV=$(gh release list --limit 100 --json tagName,isDraft --jq '[.[] | select(.isDraft == false and (.tagName | startswith("v")))][0].tagName // empty')
+          if [[ -n "$PREV" ]]; then
+            mkdir "$RUNNER_TEMP/previous"
+            gh release download "$PREV" --pattern '*.apk' --dir "$RUNNER_TEMP/previous"
+            mapfile -t OLD < <(find "$RUNNER_TEMP/previous" -name '*.apk')
+            [[ ${#OLD[@]} == 1 ]]
+            OLD_CERT=$("$TOOLS/apksigner" verify --print-certs "${OLD[0]}" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p')
+            [[ -n "$OLD_CERT" ]]
+            if [[ "$CERT" != "$OLD_CERT" ]]; then
+              if [[ "$MIGRATE" == true && "$PREV" =~ ^v0\.9\.[0-3]$ ]]; then
+                echo "::warning::Однократный переход со старой debug-подписи; потребуется переустановка."
+              else
+                echo "::error::Сертификат отличается от предыдущего релиза. Восстановите прежний ключ подписи."
+                exit 1
+              fi
+            fi
           fi
-          # GitHub's #suffix only sets an asset label, not its download filename.
-          cp "$APK" "$ASSET"
-          gh release upload "$TAG" "$ASSET" --clobber
-          # Remove the old generic filename from this versioned release.
-          if gh release view "$TAG" --json assets --jq '.assets[].name' | grep -Fxq 'app-debug.apk'; then
-            gh release delete-asset "$TAG" app-debug.apk --yes
+          mkdir dist
+          cp "$APK" "dist/AutoChords-v$VERSION.apk"
+          HASH=$(sha256sum "$APK" | cut -d' ' -f1)
+          printf 'Версия: %s\n\nversionCode: %s\n\nSHA-256 APK: %s\n\nSHA-256 сертификата: %s\n' "$VERSION" "$VERSION_CODE" "$HASH" "$CERT" > dist/notes.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AutoChords-v${{ steps.meta.outputs.version }}
+          path: dist/
+          retention-days: 30
+          if-no-files-found: error
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: AutoChords-v${{ needs.build.outputs.version }}
+          path: dist
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          set -euo pipefail
+          if git ls-remote --exit-code --tags origin "refs/tags/v$VERSION" >/dev/null; then
+            echo "::error::Тег уже существует — подними versionName"
+            exit 1
           fi
-
-          # Keep the old preview URL working for installed/test versions.
-          if gh release view preview >/dev/null 2>&1; then
-            gh release edit preview --title "${TITLE} — preview" --notes "$NOTES" --prerelease
-          else
-            gh release create preview --target "$GITHUB_SHA" --title "${TITLE} — preview" --notes "$NOTES" --prerelease --latest=false
-          fi
-          gh release upload preview "$APK" --clobber
+          FLAGS=(--latest)
+          if [[ "$VERSION" == *-* ]]; then FLAGS=(--prerelease --latest=false); fi
+          gh release create "v$VERSION" "dist/AutoChords-v$VERSION.apk" --target "$GITHUB_SHA" --title "AutoChords v$VERSION" --notes-file dist/notes.txt "${FLAGS[@]}"
+          if gh release view preview >/dev/null 2>&1; then gh release delete preview --cleanup-tag --yes; fi
+          if git ls-remote --exit-code --tags origin refs/tags/preview >/dev/null; then git push origin :refs/tags/preview; fi
