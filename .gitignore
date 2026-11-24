@@ -8,3 +8,8 @@ local.properties
 *.aab
 *.jks
 *.keystore
+.env
+.env.*
+keystore.properties
+*.p12
+*.pfx
