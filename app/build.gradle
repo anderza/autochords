@@ -4,6 +4,8 @@ plugins {
 
 def signingEnv = ['KEYSTORE_PATH','KEYSTORE_PASSWORD','KEY_ALIAS','KEY_PASSWORD'].collectEntries { [(it): System.getenv(it)] }
 def canSign = signingEnv.values().every { it }
+def appVersionCode = Integer.parseInt(System.getenv('VERSION_CODE') ?: '13')
+def appVersionName = rootProject.file('VERSION').getText('UTF-8').trim()
 android {
     signingConfigs {
         release {
@@ -27,8 +29,8 @@ android {
         applicationId 'com.anderza.autochords'
         minSdk 24
         targetSdk 34
-        versionCode (System.getenv('VERSION_CODE') ?: '13').toInteger()
-        versionName rootProject.file('VERSION').text.trim()
+        versionCode = appVersionCode
+        versionName = appVersionName
     }
 
     compileOptions {
