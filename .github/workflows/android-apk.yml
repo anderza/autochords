@@ -1,82 +1,110 @@
 name: Build AutoChords APK
-
 on:
+  pull_request:
   push:
     branches: [main]
+    tags: ['v*']
   workflow_dispatch:
-
 permissions:
-  contents: write
-
+  contents: read
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
-  android:
-    name: Android debug APK
+  build:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    outputs:
+      signed: ${{ steps.sign.outputs.signed }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Java 17
-        uses: actions/setup-java@v4
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
-
-      - name: Gradle 8.9
-        uses: gradle/actions/setup-gradle@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-
-      - name: Build installable APK
-        run: gradle --no-daemon --stacktrace assembleDebug
-
-      - name: Store downloadable APK artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: AutoChords-debug-APK
-          path: app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
-          retention-days: 30
-
-      - name: Publish named versioned AutoChords release
-        if: github.ref == 'refs/heads/main'
+      - run: node tests/check-html.cjs && node --test tests/analyzer.test.cjs
+      - name: Set version code
+        run: echo "VERSION_CODE=$((1000 + GITHUB_RUN_NUMBER))" >> "$GITHUB_ENV"
+      - name: Debug checks
+        run: gradle --no-daemon lintDebug testDebugUnitTest assembleDebug
+      - name: Release signing
+        id: sign
+        if: github.event_name != 'pull_request'
         env:
-          GH_TOKEN: ${{ github.token }}
-        shell: bash
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           set -euo pipefail
-          VERSION="$(sed -n "s/.*versionName ['\"]\([^'\"]*\)['\"].*/\1/p" app/build.gradle | head -n 1)"
-          if [[ -z "$VERSION" ]]; then
-            echo "Could not read Android versionName"
-            exit 1
+          if [[ -z "$KEYSTORE_BASE64" || -z "$KEYSTORE_PASSWORD" || -z "$KEY_ALIAS" || -z "$KEY_PASSWORD" ]]; then
+            echo signed=false >> "$GITHUB_OUTPUT"
+            exit 0
           fi
-
-          TAG="v${VERSION}"
-          TITLE="AutoChords v${VERSION}"
-          APK="app/build/outputs/apk/debug/app-debug.apk"
-          ASSET="AutoChords-v${VERSION}.apk"
-          NOTES="AutoChords ${VERSION} — предварительная Android APK (debug).
-
-          Эта сборка использует отладочную подпись. Обновление поверх предыдущих APK может не работать, если ключ подписи отличается."
-
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release edit "$TAG" --title "$TITLE" --notes "$NOTES" --prerelease
-          else
-            gh release create "$TAG" --target "$GITHUB_SHA" --title "$TITLE" --notes "$NOTES" --prerelease --latest=false
+          umask 077
+          export KEYSTORE_PATH="$(mktemp "$RUNNER_TEMP/autochords.XXXXXX")"
+          trap 'rm -f "$KEYSTORE_PATH"' EXIT
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE_PATH"
+          unset KEYSTORE_BASE64
+          gradle --no-daemon lintRelease assembleRelease
+          version="$(cat VERSION)"
+          mkdir -p dist
+          cp app/build/outputs/apk/release/app-release.apk "dist/AutoChords-v$version.apk"
+          (cd dist && sha256sum *.apk > SHA256SUMS.txt)
+          echo signed=true >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        if: steps.sign.outputs.signed == 'true'
+        with:
+          name: signed-apk
+          path: dist/
+          retention-days: 30
+  publish:
+    needs: build
+    if: needs.build.outputs.signed == 'true' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          name: signed-apk
+          path: dist
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          version="$(cat VERSION)"
+          tag="v$version"
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          if [[ "$GITHUB_REF" == refs/tags/* || "$GITHUB_EVENT_NAME" == workflow_dispatch ]]; then
+            if [[ "$GITHUB_REF" == refs/tags/* ]]; then [[ "$GITHUB_REF_NAME" == "$tag" ]]; fi
+            if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+              [[ "$(git rev-list -n 1 "$tag")" == "$GITHUB_SHA" ]]
+            fi
+            previous="$(git describe --tags --match 'v[0-9]*' --abbrev=0 "$GITHUB_SHA^" 2>/dev/null || true)"
+            if [[ -n "$previous" ]]; then git log --oneline "$previous..$GITHUB_SHA" > notes.txt; else git log --oneline "$GITHUB_SHA" > notes.txt; fi
+            if ! gh release view "$tag" >/dev/null 2>&1; then
+              gh release create "$tag" --target "$GITHUB_SHA" --notes-file notes.txt dist/*
+            fi
           fi
-          # GitHub's #suffix only sets an asset label, not its download filename.
-          cp "$APK" "$ASSET"
-          gh release upload "$TAG" "$ASSET" --clobber
-          # Remove the old generic filename from this versioned release.
-          if gh release view "$TAG" --json assets --jq '.assets[].name' | grep -Fxq 'app-debug.apk'; then
-            gh release delete-asset "$TAG" app-debug.apk --yes
-          fi
-
-          # Keep the old preview URL working for installed/test versions.
-          if gh release view preview >/dev/null 2>&1; then
-            gh release edit preview --title "${TITLE} — preview" --notes "$NOTES" --prerelease
-          else
-            gh release create preview --target "$GITHUB_SHA" --title "${TITLE} — preview" --notes "$NOTES" --prerelease --latest=false
-          fi
-          gh release upload preview "$APK" --clobber
+          if gh release view preview >/dev/null 2>&1; then gh release delete preview --yes; fi
+          git tag -f preview "$GITHUB_SHA"
+          git push origin refs/tags/preview --force
+          gh release create preview --verify-tag --prerelease --latest=false --notes "Commit $GITHUB_SHA" dist/*
